@@ -9,14 +9,15 @@ tok_re =
     'num': /\d+/
     'paren': /[()\[\]{}]/ # special symbols
     'string': /"(([^"])|(\\"))*[^\\]"/ # a bitch to debug (stolen from sibilant)
-    'sym': /(\w|_)+/ # aka identifier
-    # 'quoting': /['`,@]/ # reader macros .. 
+    'sym': /(\w|[_+\-*/@!?<>])+/ # aka identifier
+    # 'quoting': /'|`|,@|,/ # reader macros .. 
 
 class Skip
     constructor: ->
 
 class Atom
     constructor: (@type, @value) ->
+    toString: @value
 
 tok_skip = ['ws', 'comment']
 tok_atom = ['num', 'sym', 'string']
@@ -99,4 +100,6 @@ tester_fn = (name, fn) ->
 test_read = tester_fn("read", read)
 
 test_read('(a (1 2 34) "text" c de fgh i) ; comment')
+test_read('(+ 1 2 (* 3 4))')
+test_read('(if (< a b) (+ a b) (- b a))')
 

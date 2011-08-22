@@ -1,7 +1,6 @@
 # lisp expressions reader
 
 _ = u = require "underscore"
-
 alist = u.isArray
 
 tok_re = 
@@ -11,7 +10,17 @@ tok_re =
     'paren': /[()\[\]{}]/ # special symbols
     'string': /"(([^"])|(\\"))*[^\\]"/ # a bitch to debug (stolen from sibilant)
     'sym': /(\w|_)+/ # aka identifier
-    # 'special': /['`,@]/ # reader macros .. 
+    # 'quoting': /['`,@]/ # reader macros .. 
+
+class Skip
+    constructor: ->
+
+class Atom
+    constructor: (@type, @value) ->
+
+tok_skip = ['ws', 'comment']
+tok_atom = ['num', 'sym', 'string']
+tok_syntax = ['paren'] #, 'quoting']
 
 matchtok = (regex, text) ->
     if m = text.match('^(' + regex.source + ')')
@@ -26,12 +35,16 @@ toktype = (text, type) ->
     return false
 
 readToken = (text, regex, type) ->
-    m = matchtok(regex, text)
-    if m
-        token = m[0]
-        # convert strings into js format, and maybe lisp number into objects, etc!
-        # token = process_<type>(token) 
+    token = matchtok(regex, text)
+    if token
         rem = text[token.length..]
+        # process tokens
+        if type in tok_skip
+            token = new Skip
+        else if type in tok_atom
+            token = new Atom type, token
+        else if type in tok_syntax
+            token = token # keep ..
         return [token, rem]
     else
         return null
@@ -46,14 +59,11 @@ token = (text) ->
     return null
 
 reader = (text) ->
-    fn = () ->
+    () ->
         res = token(text)
         if not res
             return null
         [tok,text] = res
-        console.log tok
-        # if tok.type == skip
-        #    return fn() # recurse
         return tok
 
 read_lisp = (r) ->
@@ -61,12 +71,12 @@ read_lisp = (r) ->
     result = []
     while t = r()
         # debug:
-        # console.log "read ", t
+        console.log "read ", t
         if t == '('
             result.push(read_lisp(r))
         else if t == ')'
             break
-        else if t[0] in [' ', '\t', ';'] # skip comments and whitespace
+        else if t.constructor.name == 'Skip'
             continue
         else
             result.push(t) # atom
@@ -89,5 +99,5 @@ tester_fn = (name, fn) ->
 # for debugging
 test_read = tester_fn("read", read)
 
-test_read('(a (1 2 3) "text" c d) ; comment')
+test_read('(a (1 2 34) "text" c de fgh i) ; comment')
 

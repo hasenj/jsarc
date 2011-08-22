@@ -1,0 +1,25 @@
+Start small -- implement the smallest subset of lisp/arc one can get away with
+
+datatypes: symbols, strings, numbers, functions
+if
+t, nil
+fn
+
+quote
+quasiquote
+    unquote
+    unquote-splicing
+
+for datatypes, maybe define them as such:
+
+    class DataType:
+        toString: how an instance is displayer
+        value: the actual value stored in the type?
+        type: the name of the datatype?
+
+    or maybe not; I'm thinking of this only as a way to unify symbols (which don't exist in JS) with other types like strings and numbers (which DO existin JS)
+
+    functions do exist in JS, but I don't know .. they're not "exactly" the same ..
+
+    besdies quasiquoting, a big challenge will be implementing colsures ..
+

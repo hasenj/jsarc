@@ -56,7 +56,7 @@ token = (text) ->
         res = readToken(text, regex, type)
         if res
             return res
-    return null
+    return null # what's this for?
 
 reader = (text) ->
     () ->
@@ -71,7 +71,6 @@ read_lisp = (r) ->
     result = []
     while t = r()
         # debug:
-        console.log "read ", t
         if t == '('
             result.push(read_lisp(r))
         else if t == ')'

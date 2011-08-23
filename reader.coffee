@@ -132,7 +132,7 @@ test_read('(= abc 23)')
 
 class Env
     constructor: (@parent=null) ->
-        @syms = []
+        @syms = {t, nil}
     set: (sym, val) ->
         @syms[sym] = val
     get: (sym) ->
@@ -180,8 +180,40 @@ special_forms['='] = (cons, env) ->
 env = new Env
 eval_test = tester_fn "eval", (text) -> eval(read(text), env)
 clog "eval!!"
-eval_test('5')
-eval_test('"hello"')
+eval_test '5'
+eval_test '"hello"'
 eval_test '(= x 5)'
 eval_test 'x'
 clog "env: ", env
+
+is_nil = (val) -> val.type == 'sym' and val.value == 'nil'
+
+special_forms['if'] = (exp, env) ->
+    # (if) : nil
+    # (if x) : x
+    # (if t a ...): a (where t means not nil)
+    # (if nil a b): b
+    # (if nil a b c ...): (if b c ....)
+    if is_nil cdr(exp) # (if)
+        nil
+    else if is_nil (cdr(cdr(exp))) # (if x)
+        car(cdr(exp))
+    else
+        cond = eval(car(cdr(exp)), env)
+        if not is_nil(cond) # (if t a ...)
+            car(cdr(cdr(exp))) # third element
+        else # false!!
+            if is_nil (cdr(cdr(cdr(cdr(exp))))) # list has 4 elements (a b c d) only
+                car cdr cdr cdr exp # return the forth element
+            else # transform (if nil a b c ...) to (if b c ...)
+                if_exp = cons(car(exp), (cdr(cdr(cdr(exp)))))
+                clog if_exp.repr()
+                special_forms['if'](if_exp, env) # recurse with the transformed expression
+
+eval_test '(if)'
+eval_test '(if 5)'
+eval_test '(if 5 10)'
+eval_test '(if 5 10 15)'
+eval_test '(if nil 10 15)'
+eval_test '(if nil 10 15 20 30)'
+eval_test '(if nil 10 nil 20 30)'

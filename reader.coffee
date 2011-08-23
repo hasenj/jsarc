@@ -132,9 +132,18 @@ test_read('(= abc 23)')
 
 class Env
     constructor: (@parent=null) ->
-        @syms = {t, nil}
+        if not @parent
+            @syms = {t, nil}
+        else
+            @syms = {}
+    has: (sym) ->
+        sym of @syms or (@parent and @parent.has(sym))
     set: (sym, val) ->
-        @syms[sym] = val
+        # if symbol defined in a parent scope, set it there, not here
+        if @parent and @parent.has(sym)
+            @parent.set(sym, val)
+        else
+            @syms[sym] = val
     get: (sym) ->
         if sym of @syms
             @syms[sym]
@@ -217,3 +226,4 @@ eval_test '(if 5 10 15)'
 eval_test '(if nil 10 15)'
 eval_test '(if nil 10 15 20 30)'
 eval_test '(if nil 10 nil 20 30)'
+

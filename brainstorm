@@ -23,3 +23,18 @@ for datatypes, maybe define them as such:
 
     besdies quasiquoting, a big challenge will be implementing colsures ..
 
+----------------------------
+
+in coffeescript, we implement a basic lisp
+
+then we implement an Arc on top of it (as macros)
+
+For instance, we implement lambda as:
+    (lambda arguments statement statement ....)
+
+And then implement the arc 'fn' as a macro on top of it
+
+we implement a basic 'set' form, and implement the Arc '=' on top of it.
+
+It's probably a good idea to use underscores in these "basic" forms' names so people don't use them, e.g. __lambda__
+

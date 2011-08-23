@@ -60,11 +60,13 @@ token = (text) ->
     return null # what's this for?
 
 reader = (text) ->
-    () ->
+    fn = () ->
         res = token(text)
         if not res
             return null
         [tok,text] = res
+        if tok.constructor.name == 'Skip'
+            return fn()
         return tok
 
 read_lisp = (r) ->
@@ -76,8 +78,6 @@ read_lisp = (r) ->
             result.push(read_lisp(r))
         else if t == ')'
             break
-        else if t.constructor.name == 'Skip'
-            continue
         else
             result.push(t) # atom
     return result

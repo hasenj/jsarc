@@ -9,7 +9,7 @@ tok_re =
     'num': /\d+/
     'paren': /[()\[\]{}]/ # special symbols
     'string': /"(([^"])|(\\"))*[^\\]"/ # a bitch to debug (stolen from sibilant)
-    'sym': /(\w|[_+\-*/@!?<>])+/ # aka identifier
+    'sym': /(\w|[_+\-*/@=!?<>])+/ # aka identifier
     # 'quoting': /'|`|,@|,/ # reader macros .. 
 
 class Skip
@@ -17,7 +17,6 @@ class Skip
 
 class Atom
     constructor: (@type, @value) ->
-    eval: -> @value
 
 tok_skip = ['ws', 'comment']
 tok_atom = ['num', 'sym', 'string']
@@ -71,6 +70,7 @@ reader = (text) ->
 
 class Pair
     constructor: (@car, @cdr) ->
+        @type = 'cons'
 
 cons = (car, cdr) -> new Pair car, cdr
 car = (pair) -> pair.car
@@ -100,6 +100,7 @@ read_lisp = (r) ->
     else
         item
 
+# takes a string and parses it into a "lisp" expression
 read = (s) ->
     read_lisp(reader(s))
 
@@ -116,15 +117,71 @@ Atom.prototype.repr = ->
 tester_fn = (name, fn) ->
     (str) ->
         clog name + ">", str
-        clog fn(str).repr()
+        clog fn(str)
         clog
 
 # for debugging
-test_read = tester_fn("read", read)
+test_read = tester_fn("read", (text) -> read(text).repr())
 
 test_read('10')
 test_read('()')
 test_read('(a (1 2 34) "text" c de fgh i) ; comment')
 test_read('(+ 1 2 ( * 3 4))')
 test_read('(if (< a b) (+ a b) ( - b a))')
+test_read('(= abc 23)')
 
+class Env
+    constructor: (@parent=null) ->
+        @syms = []
+    set: (sym, val) ->
+        @syms[sym] = val
+    get: (sym) ->
+        if sym of @syms
+            @syms[sym]
+        else if @parent
+            @parent.get(sym)
+        else
+            null # for undefined
+
+#TODO define some Function class too and somehow make it have its own Env
+
+# -- time for eval !! ---
+
+# build eval iteratively like lava-script
+eval = (exp, env) ->
+   if exp.type == 'sym'
+       env.get(exp.value)
+   else if exp.type in ['num', 'string']
+       exp.value
+
+
+special_forms = {} # special form processors: a function that processes each form
+# The function should expect to receive the cons cell for that form, and the environment in which it's evaluated
+special_forms['='] = (cons, env) ->
+    # just assume that car(cons) is the symbol '=', don't even check for it
+    # assume (= sym val) for now
+    # later should extended so that it handles places, not just symbols, 
+    # e.g. (= place val)
+    sym = car(cdr(cons)).value
+    val = eval(car(cdr(cdr(cons))), env)
+    env.set(sym, val)
+
+( ->
+    orig = eval
+    eval = (exp, env) ->
+        if exp.type == 'cons' 
+            if car(exp).type == 'sym'
+                if car(exp).value of special_forms
+                    special_forms[car(exp).value](exp, env)
+        else
+            orig(exp, env)
+)()
+
+env = new Env
+eval_test = tester_fn "eval", (text) -> eval(read(text), env)
+clog "eval!!"
+eval_test('5')
+eval_test('"hello"')
+eval_test '(= x 5)'
+eval_test 'x'
+clog "env: ", env

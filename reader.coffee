@@ -160,8 +160,8 @@ class Env
 eval = (exp, env) ->
    if exp.type == 'sym'
        env.get(exp.value)
-   else if exp.type in ['num', 'string']
-       exp.value
+   else # if exp.type in ['num', 'string']
+       exp
 
 
 special_forms = {} # special form processors: a function that processes each form

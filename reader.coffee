@@ -216,7 +216,6 @@ special_forms['if'] = (exp, env) ->
                 car cdr cdr cdr exp # return the forth element
             else # transform (if nil a b c ...) to (if b c ...)
                 if_exp = cons(car(exp), (cdr(cdr(cdr(exp)))))
-                clog if_exp.repr()
                 special_forms['if'](if_exp, env) # recurse with the transformed expression
 
 eval_test '(if)'
@@ -226,4 +225,33 @@ eval_test '(if 5 10 15)'
 eval_test '(if nil 10 15)'
 eval_test '(if nil 10 15 20 30)'
 eval_test '(if nil 10 nil 20 30)'
+
+# unit testing
+
+utest = (name, text1, text2, equal=true) ->
+    uenv = new Env
+    v1 = eval(read(text1), env)
+    v2 = eval(read(text2), env)
+    if not equal == u.isEqual(v1, v2)
+        clog "Test '#{name}' faild:"
+        clog "     ", text1, "   ->    ", v1
+        clog "     ", text2, "   ->    ", v2
+        clog "------------------"
+    else
+        if true #verbose
+            clog "Test #{name} passed"
+            rel = if equal then " -> " else " != "
+            clog "    ", text1, rel, text2
+
+
+eval_test '(if)'
+utest "if1", '(if)', 'nil'
+utest "if2", '(if 5)', '5'
+utest "if3", '(if 5 10)', '10'
+utest "if4", '(if 5 10)', '5', false
+utest "if5", '(if 5 10 15)', '10'
+utest "if6", '(if nil 10 15)', '10', false
+utest "if6", '(if nil 10 15)', '15'
+utest "if7", '(if nil 10 15 20 30)', '20'
+utest "if8", '(if nil 10 nil 20 30)', '30'
 

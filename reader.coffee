@@ -17,7 +17,7 @@ class Skip
 
 class Atom
     constructor: (@type, @value) ->
-    toString: @value
+    eval: -> @value
 
 tok_skip = ['ws', 'comment']
 tok_atom = ['num', 'sym', 'string']
@@ -57,35 +57,58 @@ token = (text) ->
         res = readToken(text, regex, type)
         if res
             return res
-    return null # what's this for?
+    return null # EOF
 
 reader = (text) ->
     fn = () ->
         res = token(text)
         if not res
-            return null
+            return null #EOF
         [tok,text] = res
         if tok.constructor.name == 'Skip'
             return fn()
         return tok
 
+class Pair
+    constructor: (@car, @cdr) ->
+
+cons = (car, cdr) -> new Pair car, cdr
+car = (pair) -> pair.car
+cdr = (pair) -> pair.cdr
+
+sym = (name) -> new Atom('sym', name)
+
+# empty lists are represented with nil, so that () is nil
+t = sym('t')
+nil = sym('nil')
+
+# read a single lisp expression
 read_lisp = (r) ->
     # r is a reader function
-    result = []
-    while t = r()
-        # debug:
-        if t == '('
-            result.push(read_lisp(r))
-        else if t == ')'
-            break
+    read_list = () ->
+        item = r()
+        if item == '('
+            cons(read_list(), read_list())
+        else if item == ')' or item == null
+            nil
         else
-            result.push(t) # atom
-    return result
+            cons(item, read_list())
+
+    item = r()
+    if item == '('
+        read_list()
+    else
+        item
 
 read = (s) ->
-    read_lisp(reader(s))[0]
+    read_lisp(reader(s))
 
 clog = console.log
+
+Pair.prototype.repr = ->
+    "( " + @car.repr() + " . " + @cdr.repr() + " )"
+Atom.prototype.repr = ->
+    @type + "(" + @value + ")"
 
 # Generate a tester function
 # A tester function takes a raw strig, processes it according to some function,
@@ -93,13 +116,15 @@ clog = console.log
 tester_fn = (name, fn) ->
     (str) ->
         clog name + ">", str
-        clog fn(str)
+        clog fn(str).repr()
         clog
 
 # for debugging
 test_read = tester_fn("read", read)
 
+test_read('10')
+test_read('()')
 test_read('(a (1 2 34) "text" c de fgh i) ; comment')
-test_read('(+ 1 2 (* 3 4))')
-test_read('(if (< a b) (+ a b) (- b a))')
+test_read('(+ 1 2 ( * 3 4))')
+test_read('(if (< a b) (+ a b) ( - b a))')
 

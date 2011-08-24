@@ -133,7 +133,7 @@ test_read('(= abc 23)')
 class Env
     constructor: (@parent=null) ->
         if not @parent
-            @syms = {t, nil}
+            @syms = {t, nil, cons, car, cdr} # builtins ..
         else
             @syms = {}
     has: (sym) ->
@@ -225,6 +225,7 @@ eval_test '(if 5 10 15)'
 eval_test '(if nil 10 15)'
 eval_test '(if nil 10 15 20 30)'
 eval_test '(if nil 10 nil 20 30)'
+eval_test '(cons 1 (cons 2 nil))'
 
 # unit testing
 
@@ -254,4 +255,37 @@ utest "if6", '(if nil 10 15)', '10', false
 utest "if6", '(if nil 10 15)', '15'
 utest "if7", '(if nil 10 15 20 30)', '20'
 utest "if8", '(if nil 10 nil 20 30)', '30'
+
+# a native datatype
+class Lambda
+    # parent_env: scope where the lambda is created
+    constructor: (parent_env, @args_sym_name, @body) ->
+        @type = 'lambda'
+        @env = new Env(parent_env)
+        clog @repr()
+    call: (args_cons, call_env)->
+        # assume args_cons is already eval'ed
+        @env.set(@args_sym_name, args_cons)
+        do_ = (exp_list)->
+            v = eval(car(exp_list), @env)
+            if not is_nil(cdr(exp_list))
+                return do_ cdr exp_list
+            else
+                return v
+        do_ @body
+
+    repr: ->
+        'lambda(' + @args_sym_name + '){' + @body.repr() + '}'
+
+special_forms['lambda'] = (exp, env) ->
+    # (lambda args_var_name exp exp exp ...)
+    # args_var_name is a symbol, unevaluated ..
+    # assert (car cdr exp).type == 'sym' # TODO enable this when you decide how to build error reporting ..
+    args_sym_name = (car cdr exp).value
+    body = car cdr cdr exp
+    new Lambda(env, args_sym_name, body)
+    
+eval_test '(lambda args (+ args))'
+
+
 

@@ -38,3 +38,12 @@ we implement a basic 'set' form, and implement the Arc '=' on top of it.
 
 It's probably a good idea to use underscores in these "basic" forms' names so people don't use them, e.g. __lambda__
 
+lambda is also what "do" would build on: it evaluates its "body" expressions in order and returns the last one
+
+lambda also creates its own scope,
+
+and the "var" form creates local variables (I think this should be a good idea)
+
+instead of the "Arc" way of building a "let" macro on top of "fn"
+
+I'm not sure how much is required to build destructuring, though, let's hope that much is enough ..

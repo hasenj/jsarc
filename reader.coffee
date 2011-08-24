@@ -232,6 +232,9 @@ eval_test '(cons 1 (cons 2 nil))'
 # unit testing
 
 utest = (name, text1, text2, equal=true) ->
+    if true #verbose
+        rel = if equal then " -> " else " != "
+        clog "test>", text1, rel, text2
     uenv = new Env
     v1 = eval(read(text1), env)
     v2 = eval(read(text2), env)
@@ -240,10 +243,6 @@ utest = (name, text1, text2, equal=true) ->
         clog "     ", text1, "   ->    ", v1
         clog "     ", text2, "   ->    ", v2
         clog "------------------"
-    else
-        if true #verbose
-            rel = if equal then " -> " else " != "
-            clog "test>", text1, rel, text2
 
 
 eval_test '(if)'

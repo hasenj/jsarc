@@ -229,6 +229,7 @@ eval_test '(cons 1 (cons 2 nil))'
 # unit testing
 
 uenv = new Env
+test_fails = []
 utest = (name, text1, text2, equal=true) ->
     if true #verbose
         rel = if equal then " -> " else " != "
@@ -240,6 +241,7 @@ utest = (name, text1, text2, equal=true) ->
         clog "     ", text1, "   ->    ", v1
         clog "     ", text2, "   ->    ", v2
         clog "------------------"
+        test_fails.push(name)
 
 
 eval_test '(if)'
@@ -418,3 +420,12 @@ utest "index1", "((list 4 5 6 7 8 9) 2)", "6"
 
 utest "setlist", "(= z (list 1 2 3 4))", "(list 1 2 3 4)"
 utest "index2", "(z 1)", "2"
+
+
+if test_fails.length
+    clog "Failed tests: ", test_fails.length
+    for fail in test_fails
+        clog "    ", fail
+else
+    clog ".."
+    clog "All tests passed"

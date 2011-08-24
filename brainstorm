@@ -47,3 +47,7 @@ and the "var" form creates local variables (I think this should be a good idea)
 instead of the "Arc" way of building a "let" macro on top of "fn"
 
 I'm not sure how much is required to build destructuring, though, let's hope that much is enough ..
+
+------
+
+see http://files.arcfn.com/foundation-doc.html for a list of builtins we need to support!

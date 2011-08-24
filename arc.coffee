@@ -112,7 +112,7 @@ Pair.prototype.repr = ->
 Atom.prototype.repr = ->
     @type + "(" + @value + ")"
 
-global_bindings = {t, nil} # builtins ..
+builtins = {t, nil} # builtins ..
 
 class Env
     constructor: (@parent, bindings) ->
@@ -136,7 +136,7 @@ class Env
         else
             null # for undefined
 
-new_env = -> new Env null, global_bindings
+new_env = -> new Env null, builtins
 exports.new_env = new_env
 
 # -- time for eval !! ---
@@ -261,7 +261,7 @@ parseNumber = (atom) -> parseInt atom.value # placeholder, temporary or not?
             new Atom('num', val.toString())
 
     for op, fn of ops
-        global_bindings[op] = new BuiltinFunction op_fn(fn)
+        builtins[op] = new BuiltinFunction op_fn(fn)
 
     ops = 
         '<': (a,b) -> a < b
@@ -286,7 +286,7 @@ parseNumber = (atom) -> parseInt atom.value # placeholder, temporary or not?
             return t
 
     for op, fn of ops
-        global_bindings[op] = new BuiltinFunction op_fn(fn)
+        builtins[op] = new BuiltinFunction op_fn(fn)
 )()
 
 # implement function calls ..
@@ -317,8 +317,8 @@ call_function = (call_object, exp, env) ->
 
 # -----------------------
 # add cons, car, cdr to global builtins
-global_bindings['list'] = new BuiltinFunction( (exp) -> exp )
-global_bindings['cons'] = new BuiltinFunction( (exp) -> cons(car(exp), car(cdr(exp))) )
-global_bindings['car'] = new BuiltinFunction ( (exp) -> car car exp ) # exp is a list of one element, we want the car of that element
-global_bindings['cdr'] = new BuiltinFunction ( (exp) -> cdr car exp ) # exp is a list of one element, we want the cdr of that element
+builtins['list'] = new BuiltinFunction( (exp) -> exp )
+builtins['cons'] = new BuiltinFunction( (exp) -> cons(car(exp), car(cdr(exp))) )
+builtins['car'] = new BuiltinFunction ( (exp) -> car car exp ) # exp is a list of one element, we want the car of that element
+builtins['cdr'] = new BuiltinFunction ( (exp) -> cdr car exp ) # exp is a list of one element, we want the cdr of that element
 

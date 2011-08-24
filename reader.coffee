@@ -158,16 +158,25 @@ class Env
 
 # -- time for eval !! ---
 
-# build eval iteratively like lava-script
-eval = (exp, env) ->
-   if exp.type == 'sym'
-       env.get(exp.value)
-   else # if exp.type in ['num', 'string']
-       exp
-
 
 special_forms = {} # special form processors: a function that processes each form
 # The function should expect to receive the cons cell for that form, and the environment in which it's evaluated
+call_function = -> clog "dummy call handler"
+
+eval = (exp, env) ->
+    if exp.type == 'sym'
+       env.get(exp.value)
+
+    else if exp.type == 'cons' 
+        if car(exp).type == 'sym' and car(exp).value of special_forms
+                special_forms[car(exp).value](exp, env)
+        else
+            head = eval(car(exp), env)
+            call_function(head, exp, env) # head might be a function, or anything else, (macro, etc), it's all the same from here on as far as we're concerned
+
+    else # if exp.type in ['num', 'string']
+        exp
+
 special_forms['='] = (cons, env) ->
     # just assume that car(cons) is the symbol '=', don't even check for it
     # assume (= sym val) for now
@@ -176,26 +185,14 @@ special_forms['='] = (cons, env) ->
     sym = car(cdr(cons)).value
     val = eval(car(cdr(cdr(cons))), env)
     env.set(sym, val)
-
-( ->
-    orig = eval
-    eval = (exp, env) ->
-        if exp.type == 'cons' 
-            if car(exp).type == 'sym'
-                if car(exp).value of special_forms
-                    special_forms[car(exp).value](exp, env)
-        else
-            orig(exp, env)
-)()
+    return val
 
 env = new Env
 eval_test = tester_fn "eval", (text) -> eval(read(text), env)
-clog "eval!!"
 eval_test '5'
 eval_test '"hello"'
 eval_test '(= x 5)'
 eval_test 'x'
-clog "env: ", env
 
 is_nil = (val) -> val.type == 'sym' and val.value == 'nil'
 
@@ -262,7 +259,6 @@ class Lambda
     constructor: (parent_env, @args_sym_name, @body) ->
         @type = 'lambda'
         @env = parent_env.spawn()
-        clog @repr()
     call: (args_cons, call_env)->
         # assume each item in args_cons are already eval'ed
         @env.set(@args_sym_name, args_cons)
@@ -352,31 +348,25 @@ class BuiltinFunction
         global_bindings[op] = new BuiltinFunction op_fn(fn)
 )()
 
+eval_test "+"
+eval_test "<"
+
 # implement function calls ..
-( ->
-    orig = eval
-    eval = (exp, env) ->
-        if exp.type == 'cons' 
-            if car(exp).type == 'sym'
-                if env.has(car(exp).value)
-                    obj = env.get(car(exp).value) # get the object pointed to by the first symbol
-                    if obj.type == 'lambda' # if it's a function
-                        # call it
-                        # first, eval all remaining things in the expression
-                        do_eval_list = (exp) ->
-                            if is_nil exp
-                                nil
-                            else
-                                head = eval(car(exp), env)
-                                cons(head, do_eval_list(cdr exp))
+call_function = (call_object, exp, env) ->
+    if call_object.type == 'lambda' # if it's a function
+        # call it
+        # first, eval all remaining things in the expression
+        do_eval_list = (exp) ->
+            if is_nil exp
+                nil
+            else
+                head = eval(car(exp), env)
+                cons(head, do_eval_list(cdr exp))
 
-                        # then pass them to the function 
-                        evaled_list = do_eval_list(cdr exp)
-                        obj.call(evaled_list)
+        # then pass them to the function 
+        evaled_list = do_eval_list(cdr exp)
+        call_object.call(evaled_list)
 
-        else
-            orig(exp, env)
-)()
 
 eval_test "(+ 1 2 3)"
 utest "plus_call1", '(+ 1 2 3)', '6'
@@ -404,3 +394,5 @@ eval_test "(car (cons 1 2))"
 utest "listcons", "(cons 1 (cons 2 (cons 3 nil)))", "(list 1 2 3)"
 utest "carlist", "(car (list 1 2 3))", "1"
 
+utest "set", "(= y 5)", "5"
+utest "var", "(+ y 3)", "8"

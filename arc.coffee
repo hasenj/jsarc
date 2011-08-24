@@ -1,7 +1,8 @@
 # lisp expressions reader
 
 u = require "underscore"
-alist = u.isArray
+
+clog = console.log
 
 tok_re = 
     'ws': /\s+/
@@ -203,7 +204,7 @@ class Lambda
     call: (args_cons, call_env)->
         # assume each item in args_cons are already eval'ed
         @env.set(@args_sym_name, args_cons)
-        do_ = (exp_list)->
+        do_ = (exp_list)=>
             v = eval(car(exp_list), @env)
             if not is_nil(cdr(exp_list))
                 return do_ cdr exp_list
@@ -219,7 +220,7 @@ special_forms['lambda'] = (exp, env) ->
     # args_var_name is a symbol, unevaluated ..
     # assert (car cdr exp).type == 'sym' # TODO enable this when you decide how to build error reporting ..
     args_sym_name = (car cdr exp).value
-    body = car cdr cdr exp # unevaluated ... only evaluates when function is called ..
+    body = cdr cdr exp # unevaluated ... only evaluates when function is called ..
     new Lambda(env, args_sym_name, body)
     
 class BuiltinFunction

@@ -75,6 +75,8 @@ eval_test "<"
 eval_test "(+ 1 2 3)"
 utest "plus_call1", '(+ 1 2 3)', '6'
 utest "plus_call2", '(+ 4 2 3)', '9'
+utest "arith_calls", '(+ (+ 3 1) 4 2)', '10'
+utest "arith_calls", '(+ (+ 3 1) 2 (- 4 3))', '7'
 utest "lt1", '(< 4 2 3)', 'nil'
 utest "lt2", '(< 2 4 8)', 't'
 utest "lt2", '(> 6 4 4 3)', 'nil'
@@ -101,6 +103,13 @@ utest "index1", "((list 4 5 6 7 8 9) 2)", "6"
 utest "setlist", "(= z (list 1 2 3 4))", "(list 1 2 3 4)"
 utest "index2", "(z 1)", "2"
 
+eval_test "(= f (lambda args (+ (car args) (car (cdr args)))))"
+eval_test "(f 3 4)"
+utest "lambda", "(f 3 4)", "7"
+
+
+# -------------------------------------------------------------------
+# ---------   Leave this at the end      ----------------------------
 
 if test_fails.length
     clog "Failed tests: ", test_fails.length

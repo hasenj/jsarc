@@ -22,7 +22,7 @@ test_read('(+ 1 2 ( * 3 4))')
 test_read('(if (< a b) (+ a b) ( - b a))')
 test_read('(= abc 23)')
 
-env = new arc.Env
+env = arc.new_env()
 
 eval_test = tester_fn "eval", (text) -> arc.eval(arc.read(text), env)
 eval_test '5'

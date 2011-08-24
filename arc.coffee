@@ -115,8 +115,8 @@ Atom.prototype.repr = ->
 global_bindings = {t, nil} # builtins ..
 
 class Env
-    constructor: (@parent=null, bindings=global_bindings) ->
-        @syms = u.clone global_bindings
+    constructor: (@parent, bindings) ->
+        @syms = u.clone bindings
     spawn: ->
         # spawns a child environment
         new Env(this, {})
@@ -136,7 +136,8 @@ class Env
         else
             null # for undefined
 
-exports.Env = Env
+new_env = -> new Env null, global_bindings
+exports.new_env = new_env
 
 # -- time for eval !! ---
 

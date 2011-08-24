@@ -311,20 +311,23 @@ class BuiltinFunction
         '<=': (a,b) -> a <= b
         '>=': (a,b) -> a >= b
 
-    parseNumber = parseInt # placeholder, temporary or not?
+    # Note: there's some funny business with number values being passed around as "strings" ..
+
+    parseNumber = (atom) -> parseInt atom.value # placeholder, temporary or not?
 
     op_fn = (fn) ->
         # turns a simple js function to a lispy builtin-function that deals with lisp lists
         (args) ->
             # arg is assumed to be a lisp list (cons)
-            val = parseNumber((car args).value) # TODO error handling?
+            val = parseNumber car args # TODO error handling?
             args = cdr args # pop ..
-            while not is_nil(car args)
-                v1 = (car args).value
+            while not is_nil(args)
+                v1 = parseNumber car args
                 val = fn(val, v1)
+                args = cdr args # pop ..
             # guess type
             if u.isNumber(val)
-                new Atom('num', val)
+                new Atom('num', val.toString())
             else if u.isBoolean(val)
                 if val then t else nil
 
@@ -332,4 +335,32 @@ class BuiltinFunction
         global_bindings[op] = new BuiltinFunction op_fn(fn)
 )()
 
+# implement function calls ..
+( ->
+    orig = eval
+    eval = (exp, env) ->
+        if exp.type == 'cons' 
+            if car(exp).type == 'sym'
+                if env.has(car(exp).value)
+                    obj = env.get(car(exp).value) # get the object pointed to by the first symbol
+                    if obj.type == 'lambda' # if it's a function
+                        # call it
+                        # first, eval all remaining things in the expression
+                        do_eval_list = (exp) ->
+                            if is_nil exp
+                                nil
+                            else
+                                cons(eval(car exp), do_eval_list(cdr exp))
+
+                        # then pass them to the function 
+                        evaled_list = do_eval_list(cdr exp)
+                        obj.call(evaled_list)
+
+        else
+            orig(exp, env)
+)()
+
+eval_test "(+ 1 2 3)"
+utest "plus_call1", '(+ 1 2 3)', '6'
+utest "plus_call2", '(+ 4 2 3)', '9'
 

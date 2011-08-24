@@ -130,12 +130,14 @@ test_read('(+ 1 2 ( * 3 4))')
 test_read('(if (< a b) (+ a b) ( - b a))')
 test_read('(= abc 23)')
 
+global_bindings = {t, nil, cons, car, cdr} # builtins ..
+
 class Env
-    constructor: (@parent=null) ->
-        if not @parent
-            @syms = {t, nil, cons, car, cdr} # builtins ..
-        else
-            @syms = {}
+    constructor: (@parent=null, bindings=global_bindings) ->
+        @syms = global_bindings
+    spawn: ->
+        # spawns a child environment
+        new Env(this, {})
     has: (sym) ->
         sym of @syms or (@parent and @parent.has(sym))
     set: (sym, val) ->
@@ -261,10 +263,10 @@ class Lambda
     # parent_env: scope where the lambda is created
     constructor: (parent_env, @args_sym_name, @body) ->
         @type = 'lambda'
-        @env = new Env(parent_env)
+        @env = parent_env.spawn()
         clog @repr()
     call: (args_cons, call_env)->
-        # assume args_cons is already eval'ed
+        # assume each item in args_cons are already eval'ed
         @env.set(@args_sym_name, args_cons)
         do_ = (exp_list)->
             v = eval(car(exp_list), @env)
@@ -282,10 +284,53 @@ special_forms['lambda'] = (exp, env) ->
     # args_var_name is a symbol, unevaluated ..
     # assert (car cdr exp).type == 'sym' # TODO enable this when you decide how to build error reporting ..
     args_sym_name = (car cdr exp).value
-    body = car cdr cdr exp
+    body = car cdr cdr exp # unevaluated ... only evaluates when function is called ..
     new Lambda(env, args_sym_name, body)
     
 eval_test '(lambda args (+ args))'
 
+class BuiltinFunction
+    constructor: (@js_fn) ->
+        # js_fn expects arguments to be lisp expressions, not js native types (e.g. atoms, not numbers)
+        # js_fn returns a lisp expression
+        @type = 'lambda' # cheating ..!!
+    call: (args_cons, env) ->
+        # assume each item in args_cons are already eval'ed
+        @js_fn args_cons
+    repr: ->
+        'builtin-function'
+
+# make builtin arithmetic operators
+(->
+    ops =
+        '+': (a,b) -> a + b
+        '-': (a,b) -> a - b
+        '*': (a,b) -> a * b
+        '/': (a,b) -> a / b
+        '<': (a,b) -> a < b
+        '>': (a,b) -> a > b
+        '<=': (a,b) -> a <= b
+        '>=': (a,b) -> a >= b
+
+    parseNumber = parseInt # placeholder, temporary or not?
+
+    op_fn = (fn) ->
+        # turns a simple js function to a lispy builtin-function that deals with lisp lists
+        (args) ->
+            # arg is assumed to be a lisp list (cons)
+            val = parseNumber((car args).value) # TODO error handling?
+            args = cdr args # pop ..
+            while not is_nil(car args)
+                v1 = (car args).value
+                val = fn(val, v1)
+            # guess type
+            if u.isNumber(val)
+                new Atom('num', val)
+            else if u.isBoolean(val)
+                if val then t else nil
+
+    for op, fn of ops
+        global_bindings[op] = new BuiltinFunction op_fn(fn)
+)()
 
 

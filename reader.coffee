@@ -134,8 +134,7 @@ global_bindings = {t, nil, cons, car, cdr} # builtins ..
 
 class Env
     constructor: (@parent=null, bindings=global_bindings) ->
-        # this is wrong, should do a copy
-        @syms = global_bindings
+        @syms = u.clone global_bindings
     spawn: ->
         # spawns a child environment
         new Env(this, {})
@@ -349,6 +348,9 @@ parseNumber = (atom) -> parseInt atom.value # placeholder, temporary or not?
         global_bindings[op] = new BuiltinFunction op_fn(fn)
 )()
 
+env = new Env
+uenv = new Env
+
 eval_test "+"
 eval_test "<"
 
@@ -394,6 +396,9 @@ global_bindings['cons'] = new BuiltinFunction( (exp) -> cons(car(exp), car(cdr(e
 global_bindings['car'] = new BuiltinFunction ( (exp) -> car car exp ) # exp is a list of one element, we want the car of that element
 global_bindings['cdr'] = new BuiltinFunction ( (exp) -> cdr car exp ) # exp is a list of one element, we want the cdr of that element
 
+env = new Env
+uenv = new Env
+
 eval_test "(list 1 2 3 4)"
 eval_test "(car (list 1 2 3))"
 eval_test "(cdr (list 1 2 3))"
@@ -411,6 +416,5 @@ eval_test "((list 4 5 6 7 8 9) 2)"
 
 utest "index1", "((list 4 5 6 7 8 9) 2)", "6"
 
-uenv = new Env
 utest "setlist", "(= z (list 1 2 3 4))", "(list 1 2 3 4)"
 utest "index2", "(z 1)", "2"

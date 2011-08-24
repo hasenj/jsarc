@@ -1,6 +1,6 @@
 # lisp expressions reader
 
-_ = u = require "underscore"
+u = require "underscore"
 alist = u.isArray
 
 tok_re = 
@@ -104,33 +104,14 @@ read_lisp = (r) ->
 read = (s) ->
     read_lisp(reader(s))
 
-clog = console.log
+exports.read = read
 
 Pair.prototype.repr = ->
     "( " + @car.repr() + " . " + @cdr.repr() + " )"
 Atom.prototype.repr = ->
     @type + "(" + @value + ")"
 
-# Generate a tester function
-# A tester function takes a raw strig, processes it according to some function,
-# and prints the string before and after processing
-tester_fn = (name, fn) ->
-    (str) ->
-        clog name + ">", str
-        clog fn(str)
-        clog
-
-# for debugging
-test_read = tester_fn("read", (text) -> read(text).repr())
-
-test_read('10')
-test_read('()')
-test_read('(a (1 2 34) "text" c de fgh i) ; comment')
-test_read('(+ 1 2 ( * 3 4))')
-test_read('(if (< a b) (+ a b) ( - b a))')
-test_read('(= abc 23)')
-
-global_bindings = {t, nil, cons, car, cdr} # builtins ..
+global_bindings = {t, nil} # builtins ..
 
 class Env
     constructor: (@parent=null, bindings=global_bindings) ->
@@ -154,14 +135,15 @@ class Env
         else
             null # for undefined
 
-#TODO define some Function class too and somehow make it have its own Env
+exports.Env = Env
 
 # -- time for eval !! ---
 
-
 special_forms = {} # special form processors: a function that processes each form
 # The function should expect to receive the cons cell for that form, and the environment in which it's evaluated
-call_function = -> clog "dummy call handler"
+# see '=' below
+
+call_function = -> console.log "dummy call handler"
 
 eval = (exp, env) ->
     if exp.type == 'sym'
@@ -177,6 +159,8 @@ eval = (exp, env) ->
     else # if exp.type in ['num', 'string']
         exp
 
+exports.eval = eval
+
 special_forms['='] = (cons, env) ->
     # just assume that car(cons) is the symbol '=', don't even check for it
     # assume (= sym val) for now
@@ -186,13 +170,6 @@ special_forms['='] = (cons, env) ->
     val = eval(car(cdr(cdr(cons))), env)
     env.set(sym, val)
     return val
-
-env = new Env
-eval_test = tester_fn "eval", (text) -> eval(read(text), env)
-eval_test '5'
-eval_test '"hello"'
-eval_test '(= x 5)'
-eval_test 'x'
 
 is_nil = (val) -> val.type == 'sym' and val.value == 'nil'
 
@@ -216,44 +193,6 @@ special_forms['if'] = (exp, env) ->
             else # transform (if nil a b c ...) to (if b c ...)
                 if_exp = cons(car(exp), (cdr(cdr(cdr(exp)))))
                 special_forms['if'](if_exp, env) # recurse with the transformed expression
-
-eval_test '(if)'
-eval_test '(if 5)'
-eval_test '(if 5 10)'
-eval_test '(if 5 10 15)'
-eval_test '(if nil 10 15)'
-eval_test '(if nil 10 15 20 30)'
-eval_test '(if nil 10 nil 20 30)'
-eval_test '(cons 1 (cons 2 nil))'
-
-# unit testing
-
-uenv = new Env
-test_fails = []
-utest = (name, text1, text2, equal=true) ->
-    if true #verbose
-        rel = if equal then " -> " else " != "
-        clog "test>", text1, rel, text2
-    v1 = eval(read(text1), env)
-    v2 = eval(read(text2), env)
-    if not equal == u.isEqual(v1, v2)
-        clog "Test '#{name}' faild:"
-        clog "     ", text1, "   ->    ", v1
-        clog "     ", text2, "   ->    ", v2
-        clog "------------------"
-        test_fails.push(name)
-
-
-eval_test '(if)'
-utest "if1", '(if)', 'nil'
-utest "if2", '(if 5)', '5'
-utest "if3", '(if 5 10)', '10'
-utest "if4", '(if 5 10)', '5', false
-utest "if5", '(if 5 10 15)', '10'
-utest "if6", '(if nil 10 15)', '10', false
-utest "if6", '(if nil 10 15)', '15'
-utest "if7", '(if nil 10 15 20 30)', '20'
-utest "if8", '(if nil 10 nil 20 30)', '30'
 
 # a native datatype
 class Lambda
@@ -283,8 +222,6 @@ special_forms['lambda'] = (exp, env) ->
     body = car cdr cdr exp # unevaluated ... only evaluates when function is called ..
     new Lambda(env, args_sym_name, body)
     
-eval_test '(lambda args (+ args))'
-
 class BuiltinFunction
     constructor: (@js_fn) ->
         # js_fn expects arguments to be lisp expressions, not js native types (e.g. atoms, not numbers)
@@ -350,12 +287,6 @@ parseNumber = (atom) -> parseInt atom.value # placeholder, temporary or not?
         global_bindings[op] = new BuiltinFunction op_fn(fn)
 )()
 
-env = new Env
-uenv = new Env
-
-eval_test "+"
-eval_test "<"
-
 # implement function calls ..
 call_function = (call_object, exp, env) ->
     # exp is the whole expression, including the function object at its head
@@ -382,15 +313,6 @@ call_function = (call_object, exp, env) ->
         car item
 
 
-eval_test "(+ 1 2 3)"
-utest "plus_call1", '(+ 1 2 3)', '6'
-utest "plus_call2", '(+ 4 2 3)', '9'
-utest "lt1", '(< 4 2 3)', 'nil'
-utest "lt2", '(< 2 4 8)', 't'
-utest "lt2", '(> 6 4 4 3)', 'nil'
-utest "lt2", '(> 6 4 5 3)', 'nil'
-utest "lt2", '(>= 6 4 4 3)', 't'
-
 # -----------------------
 # add cons, car, cdr to global builtins
 global_bindings['list'] = new BuiltinFunction( (exp) -> exp )
@@ -398,34 +320,3 @@ global_bindings['cons'] = new BuiltinFunction( (exp) -> cons(car(exp), car(cdr(e
 global_bindings['car'] = new BuiltinFunction ( (exp) -> car car exp ) # exp is a list of one element, we want the car of that element
 global_bindings['cdr'] = new BuiltinFunction ( (exp) -> cdr car exp ) # exp is a list of one element, we want the cdr of that element
 
-env = new Env
-uenv = new Env
-
-eval_test "(list 1 2 3 4)"
-eval_test "(car (list 1 2 3))"
-eval_test "(cdr (list 1 2 3))"
-eval_test "(cons 1 (cons 2 nil))"
-eval_test "(cons 1 2)"
-eval_test "(car (cons 1 2))"
-
-utest "listcons", "(cons 1 (cons 2 (cons 3 nil)))", "(list 1 2 3)"
-utest "carlist", "(car (list 1 2 3))", "1"
-
-utest "set", "(= y 5)", "5"
-utest "var", "(+ y 3)", "8"
-
-eval_test "((list 4 5 6 7 8 9) 2)"
-
-utest "index1", "((list 4 5 6 7 8 9) 2)", "6"
-
-utest "setlist", "(= z (list 1 2 3 4))", "(list 1 2 3 4)"
-utest "index2", "(z 1)", "2"
-
-
-if test_fails.length
-    clog "Failed tests: ", test_fails.length
-    for fail in test_fails
-        clog "    ", fail
-else
-    clog ".."
-    clog "All tests passed"

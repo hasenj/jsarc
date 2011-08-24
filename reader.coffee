@@ -367,7 +367,8 @@ class BuiltinFunction
                             if is_nil exp
                                 nil
                             else
-                                cons(eval(car exp), do_eval_list(cdr exp))
+                                head = eval(car(exp), env)
+                                cons(head, do_eval_list(cdr exp))
 
                         # then pass them to the function 
                         evaled_list = do_eval_list(cdr exp)
@@ -385,4 +386,21 @@ utest "lt2", '(< 2 4 8)', 't'
 utest "lt2", '(> 6 4 4 3)', 'nil'
 utest "lt2", '(> 6 4 5 3)', 'nil'
 utest "lt2", '(>= 6 4 4 3)', 't'
+
+# -----------------------
+# add cons, car, cdr to global builtins
+global_bindings['list'] = new BuiltinFunction( (exp) -> exp )
+global_bindings['cons'] = new BuiltinFunction( (exp) -> cons(car(exp), car(cdr(exp))) )
+global_bindings['car'] = new BuiltinFunction ( (exp) -> car car exp ) # exp is a list of one element, we want the car of that element
+global_bindings['cdr'] = new BuiltinFunction ( (exp) -> cdr car exp ) # exp is a list of one element, we want the cdr of that element
+
+eval_test "(list 1 2 3 4)"
+eval_test "(car (list 1 2 3))"
+eval_test "(cdr (list 1 2 3))"
+eval_test "(cons 1 (cons 2 nil))"
+eval_test "(cons 1 2)"
+eval_test "(car (cons 1 2))"
+
+utest "listcons", "(cons 1 (cons 2 (cons 3 nil)))", "(list 1 2 3)"
+utest "carlist", "(car (list 1 2 3))", "1"
 

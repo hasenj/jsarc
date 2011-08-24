@@ -242,9 +242,8 @@ utest = (name, text1, text2, equal=true) ->
         clog "------------------"
     else
         if true #verbose
-            clog "Test #{name} passed"
             rel = if equal then " -> " else " != "
-            clog "    ", text1, rel, text2
+            clog "test>", text1, rel, text2
 
 
 eval_test '(if)'

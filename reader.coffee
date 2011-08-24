@@ -306,10 +306,6 @@ class BuiltinFunction
         '-': (a,b) -> a - b
         '*': (a,b) -> a * b
         '/': (a,b) -> a / b
-        '<': (a,b) -> a < b
-        '>': (a,b) -> a > b
-        '<=': (a,b) -> a <= b
-        '>=': (a,b) -> a >= b
 
     # Note: there's some funny business with number values being passed around as "strings" ..
 
@@ -326,10 +322,32 @@ class BuiltinFunction
                 val = fn(val, v1)
                 args = cdr args # pop ..
             # guess type
-            if u.isNumber(val)
-                new Atom('num', val.toString())
-            else if u.isBoolean(val)
-                if val then t else nil
+            new Atom('num', val.toString())
+
+    for op, fn of ops
+        global_bindings[op] = new BuiltinFunction op_fn(fn)
+
+    ops = 
+        '<': (a,b) -> a < b
+        '>': (a,b) -> a > b
+        '<=': (a,b) -> a <= b
+        '>=': (a,b) -> a >= b
+        
+    op_fn = (fn) ->
+        # turns a simple js function to a lispy builtin-function that deals with lisp lists
+        (args) ->
+            # arg is assumed to be a lisp list (cons)
+            v0 = parseNumber car args # TODO error handling?
+            args = cdr args # pop ..
+            res = true
+            while not is_nil(args)
+                v1 = parseNumber car args
+                res = fn(v0, v1)
+                if not res # short-circuit
+                    return nil
+                v0 = v1
+                args = cdr args # pop ..
+            return t
 
     for op, fn of ops
         global_bindings[op] = new BuiltinFunction op_fn(fn)
@@ -363,4 +381,9 @@ class BuiltinFunction
 eval_test "(+ 1 2 3)"
 utest "plus_call1", '(+ 1 2 3)', '6'
 utest "plus_call2", '(+ 4 2 3)', '9'
+utest "lt1", '(< 4 2 3)', 'nil'
+utest "lt2", '(< 2 4 8)', 't'
+utest "lt2", '(> 6 4 4 3)', 'nil'
+utest "lt2", '(> 6 4 5 3)', 'nil'
+utest "lt2", '(>= 6 4 4 3)', 't'
 

@@ -134,6 +134,7 @@ global_bindings = {t, nil, cons, car, cdr} # builtins ..
 
 class Env
     constructor: (@parent=null, bindings=global_bindings) ->
+        # this is wrong, should do a copy
         @syms = global_bindings
     spawn: ->
         # spawns a child environment
@@ -228,11 +229,11 @@ eval_test '(cons 1 (cons 2 nil))'
 
 # unit testing
 
+uenv = new Env
 utest = (name, text1, text2, equal=true) ->
     if true #verbose
         rel = if equal then " -> " else " != "
         clog "test>", text1, rel, text2
-    uenv = new Env
     v1 = eval(read(text1), env)
     v2 = eval(read(text2), env)
     if not equal == u.isEqual(v1, v2)
@@ -294,6 +295,8 @@ class BuiltinFunction
     repr: ->
         'builtin-function'
 
+parseNumber = (atom) -> parseInt atom.value # placeholder, temporary or not?
+
 # make builtin arithmetic operators
 (->
     ops =
@@ -303,8 +306,6 @@ class BuiltinFunction
         '/': (a,b) -> a / b
 
     # Note: there's some funny business with number values being passed around as "strings" ..
-
-    parseNumber = (atom) -> parseInt atom.value # placeholder, temporary or not?
 
     op_fn = (fn) ->
         # turns a simple js function to a lispy builtin-function that deals with lisp lists
@@ -353,6 +354,7 @@ eval_test "<"
 
 # implement function calls ..
 call_function = (call_object, exp, env) ->
+    # exp is the whole expression, including the function object at its head
     if call_object.type == 'lambda' # if it's a function
         # call it
         # first, eval all remaining things in the expression
@@ -366,6 +368,14 @@ call_function = (call_object, exp, env) ->
         # then pass them to the function 
         evaled_list = do_eval_list(cdr exp)
         call_object.call(evaled_list)
+    else if call_object.type == 'cons' # list, treat as index function, e.g.  (a b) -> a[b]
+        index = eval(car(cdr(exp)), env)
+        index = parseNumber index
+        item = call_object
+        while index > 0
+            item = cdr item
+            index -= 1
+        car item
 
 
 eval_test "(+ 1 2 3)"
@@ -396,3 +406,11 @@ utest "carlist", "(car (list 1 2 3))", "1"
 
 utest "set", "(= y 5)", "5"
 utest "var", "(+ y 3)", "8"
+
+eval_test "((list 4 5 6 7 8 9) 2)"
+
+utest "index1", "((list 4 5 6 7 8 9) 2)", "6"
+
+uenv = new Env
+utest "setlist", "(= z (list 1 2 3 4))", "(list 1 2 3 4)"
+utest "index2", "(z 1)", "2"

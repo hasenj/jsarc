@@ -24,6 +24,7 @@ unmatched_braces = (text) ->
     else
         return false
 
+
 stdin.on 'data', (chunk) ->
     # seems we receive this when user hits enter, 
     # so I'll just assume that to be the case
@@ -36,7 +37,7 @@ stdin.on 'data', (chunk) ->
         val = arc.eval(arc.read(exp), env)
         # process.stdout.write val
         if val
-            console.log val.repr()
+            console.log arc.disp val
         else
             console.log "#ERROR"
         prompt()

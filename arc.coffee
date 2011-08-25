@@ -382,3 +382,24 @@ builtins['list'] = new BuiltinFunction( (exp) -> exp )
 builtins['cons'] = new BuiltinFunction( (exp) -> cons(car(exp), car(cdr(exp))) )
 builtins['car'] = new BuiltinFunction ( (exp) -> car car exp ) # exp is a list of one element, we want the car of that element
 builtins['cdr'] = new BuiltinFunction ( (exp) -> cdr car exp ) # exp is a list of one element, we want the cdr of that element
+
+
+# ---------------------------------- display -------------------
+disp = (lisp_object) ->
+
+    disp_list_inner = (obj, sep='') ->
+        if is_nil obj
+            ''
+        else if obj.type != 'cons'
+            sep + '. ' + disp obj
+        else
+            sep + disp(obj.car) + disp_list_inner(obj.cdr, sep=' ')
+
+    if lisp_object.type == 'cons'
+        # display list .. 
+        # HACK for now
+        '(' + disp_list_inner(lisp_object) + ')'
+    else 
+        lisp_object.value
+
+exports.disp = disp

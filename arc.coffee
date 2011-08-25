@@ -59,6 +59,7 @@ token = (text) ->
             return res
     return null # EOF
 
+# returns a reader function
 reader = (text) ->
     fn = () ->
         res = token(text)
@@ -68,6 +69,8 @@ reader = (text) ->
         if tok.constructor.name == 'Skip'
             return fn()
         return tok
+
+exports.reader = reader
 
 class Pair
     constructor: (@car, @cdr) ->

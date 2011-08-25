@@ -11,7 +11,7 @@ tok_re =
     'paren': /[()\[\]{}]/ # special symbols
     'string': /"(([^"])|(\\"))*[^\\]"/ # a bitch to debug (stolen from sibilant)
     'sym': /(\w|[_+\-*/@=!?<>])+/ # aka identifier
-    # 'quoting': /'|`|,@|,/ # reader macros .. 
+    'quoting': /'|`|,@|,/ # reader macros .. 
 
 class Skip
     constructor: ->
@@ -21,7 +21,7 @@ class Atom
 
 tok_skip = ['ws', 'comment']
 tok_atom = ['num', 'sym', 'string']
-tok_syntax = ['paren'] #, 'quoting']
+tok_syntax = ['paren', 'quoting']
 
 matchtok = (regex, text) ->
     if m = text.match('^(' + regex.source + ')')
@@ -83,8 +83,20 @@ sym = (name) -> new Atom('sym', name)
 t = sym('t')
 nil = sym('nil')
 
+quoting_map = 
+    "'": 'quote'
+    '`': 'quasiquote'
+    ',': 'unquote'
+    ',@': 'unquote-splicing'
+
 # read a single lisp expression
 read_lisp = (r) ->
+
+    expand_quoting = (quote_char) ->
+        s = new Atom 'sym', quoting_map[quote_char]
+        exp = read_lisp(r)
+        cons(s, cons(exp, nil))
+
     # r is a reader function
     read_list = () ->
         item = r()
@@ -92,12 +104,16 @@ read_lisp = (r) ->
             cons(read_list(), read_list())
         else if item == ')' or item == null
             nil
+        else if item of quoting_map
+            cons(expand_quoting(item), read_list())
         else
             cons(item, read_list())
 
     item = r()
     if item == '('
         read_list()
+    else if item of quoting_map
+        expand_quoting(item)
     else
         item
 
@@ -228,6 +244,11 @@ special_forms['quote'] = (exp, env) ->
     # exp is (quote x)
     # we're quoting the first argument, (car (cdr exp))
     car cdr exp
+
+special_forms['quasiquote'] = (exp, env) ->
+    # This one is tough!
+    # for now just mimic quote
+    car cdr exp
     
 class BuiltinFunction
     constructor: (@js_fn) ->
@@ -297,6 +318,8 @@ parseNumber = (atom) -> parseInt atom.value # placeholder, temporary or not?
 # implement function calls ..
 call_function = (call_object, exp, env) ->
     # exp is the whole expression, including the function object at its head
+    if not call_object
+        clog "LISP ERROR!", car(exp).value,  "is not a function"
     if call_object.type == 'lambda' # if it's a function
         # call it
         # first, eval all remaining things in the expression

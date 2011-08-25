@@ -107,11 +107,26 @@ eval_test "(= f (lambda args (+ (car args) (car (cdr args)))))"
 eval_test "(f 3 4)"
 utest "lambda", "(f 3 4)", "7"
 
+test_read "'(a b ,c)"
+test_read ",c"
+test_read "'c"
+test_read ",@c"
+
 eval_test "(quote a)"
 eval_test "(quote (a b c d))"
+eval_test "(list `a)"
+eval_test "`(a b ,c)"
 
 utest "quote", "(quote (a b c d))", "(list (quote a) (quote b) (quote c) (quote d))"
 
+utest "qquote0", "`a", "(quasiquote a)"
+
+utest "quote0", "'a", "(quote a)"
+utest "quote1", "(list 'a 1)", "(list (quote a) 1)"
+utest "quote2", "'''a", "(quote (quote (quote a)))"
+utest "quote3", "'(a b ,c)", "(quote (a b (unquote c)))"
+utest "quote4", "`(a b ,c)", "(quasiquote (a b (unquote c)))"
+utest "quote5", "`(a b ,c ,@d)", "(quasiquote (a b (unquote c) (unquote-splicing d)))"
 
 # -------------------------------------------------------------------
 # ---------   Leave this at the end      ----------------------------

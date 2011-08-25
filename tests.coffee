@@ -24,7 +24,7 @@ test_read('(= abc 23)')
 
 env = arc.new_env()
 
-eval_test = tester_fn "eval", (text) -> arc.eval(arc.read(text), env)
+eval_test = tester_fn "eval", (text) -> arc.eval(arc.read(text), env).repr()
 eval_test '5'
 eval_test '"hello"'
 eval_test '(= x 5)'
@@ -50,8 +50,8 @@ utest = (name, text1, text2, equal=true) ->
     v2 = arc.eval(arc.read(text2), env)
     if not equal == u.isEqual(v1, v2)
         clog "Test '#{name}' faild:"
-        clog "     ", text1, "   ->    ", v1
-        clog "     ", text2, "   ->    ", v2
+        clog "     ", text1, "   ->    ", v1.repr()
+        clog "     ", text2, "   ->    ", v2.repr()
         clog "------------------"
         test_fails.push(name)
 
@@ -112,11 +112,14 @@ test_read ",c"
 test_read "'c"
 test_read ",@c"
 
+eval_test "(= c 10)"
+eval_test "(= d (list 4 5 3))"
 eval_test "(quote a)"
 eval_test "(quote (a b c d))"
 eval_test "(list `a)"
+eval_test "c"
 eval_test "`(a b ,c)"
-
+ 
 utest "quote", "(quote (a b c d))", "(list (quote a) (quote b) (quote c) (quote d))"
 
 utest "qquote0", "`a", "(quasiquote a)"
@@ -126,7 +129,8 @@ utest "quote1", "(list 'a 1)", "(list (quote a) 1)"
 utest "quote2", "'''a", "(quote (quote (quote a)))"
 utest "quote3", "'(a b ,c)", "(quote (a b (unquote c)))"
 utest "quote4", "`(a b ,c)", "(quasiquote (a b (unquote c)))"
-utest "quote5", "`(a b ,c ,@d)", "(quasiquote (a b (unquote c) (unquote-splicing d)))"
+utest "quote5", "`(a b ,c)", "`(a b 10)" # coming out as `(a b (10))
+utest "quote6", "`(a b ,c ,@d)", "(quasiquote (a b (unquote c) (unquote-splicing d)))"
 
 # -------------------------------------------------------------------
 # ---------   Leave this at the end      ----------------------------

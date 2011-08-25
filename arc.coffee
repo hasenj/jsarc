@@ -257,10 +257,17 @@ special_forms['quasiquote'] = (exp, env) ->
         if car(exp).type == 'sym'
             if car(exp).value == 'unquote'
                 return eval(car(cdr(exp)), env)
-            if car(exp).value == 'unquote-splicing'
-                # TEMP for now, same as unquote
-                # unquote the cdr and replace the car with it ..
-                return eval(car(cdr(exp)), env)
+        if car(exp).type == 'cons'
+            if car(car(exp)).type == 'sym'
+                if car(car(exp)).value == 'unquote-splicing'
+                    # ((unquote-splicing X)) -> X1 X2 X3
+                    # car is: (unqote-splicing X)
+                    # cdr of that is (X nil)
+                    # car of that is X
+                    # so, X is car of the cdr of the car of the expression
+                    # TEMP for now, same as unquote
+                    # unquote the cdr and replace the car with it ..
+                    return eval(car(cdr(car(exp))), env)
         # then recurse
         exp.car = transform (car(exp))
         exp.cdr = transform (cdr(exp))

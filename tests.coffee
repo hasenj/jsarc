@@ -129,8 +129,9 @@ utest "quote1", "(list 'a 1)", "(list (quote a) 1)"
 utest "quote2", "'''a", "(quote (quote (quote a)))"
 utest "quote3", "'(a b ,c)", "(quote (a b (unquote c)))"
 utest "quote4", "`(a b ,c)", "(quasiquote (a b (unquote c)))"
-utest "quote5", "`(a b ,c)", "`(a b 10)" # coming out as `(a b (10))
+utest "quote5", "`(a b ,c)", "`(a b 10)"
 utest "quote6", "`(a b ,c ,@d)", "(quasiquote (a b (unquote c) (unquote-splicing d)))"
+utest "quote6", "`(a b ,c ,@d)", "`(a b 10 4 5 3)"
 
 # -------------------------------------------------------------------
 # ---------   Leave this at the end      ----------------------------

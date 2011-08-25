@@ -1,0 +1,2 @@
+#!/bin/sh
+rlwrap --complete-filenames --quote-character "\"" --remember --break-chars "[]()!:.~\"" -C jsarc coffee repl.coffee

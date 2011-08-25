@@ -250,26 +250,23 @@ special_forms['quasiquote'] = (exp, env) ->
     # start by acting like quote
     exp = car cdr exp
     # now traverse this tree to unquote things that need unquoting
-    visit = (exp) ->
+    transform = (exp) ->
         # do things ..
         if exp.type != 'cons'
-            return
+            return exp
         if car(exp).type == 'sym'
             if car(exp).value == 'unquote'
-                # unquote the cdr and replace the car with it ..
-                exp.car = eval(car(cdr(exp)), env)
-                exp.cdr = cdr cdr exp
-                return
+                return eval(car(cdr(exp)), env)
             if car(exp).value == 'unquote-splicing'
                 # TEMP for now, same as unquote
                 # unquote the cdr and replace the car with it ..
-                exp.car = eval(car(cdr(exp)), env)
+                return eval(car(cdr(exp)), env)
         # then recurse
-        visit (car(exp))
-        visit (cdr(exp))
+        exp.car = transform (car(exp))
+        exp.cdr = transform (cdr(exp))
+        return exp
 
-    visit(exp)
-    exp
+    transform(exp)
     
 class BuiltinFunction
     constructor: (@js_fn) ->

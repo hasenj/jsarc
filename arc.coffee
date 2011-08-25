@@ -274,6 +274,11 @@ special_forms['quasiquote'] = (exp, env) ->
         return exp
 
     transform(exp)
+
+special_forms['eval'] = (exp, env) ->
+    # the arguments are unevaled at this point ..
+    exp = eval(car cdr exp, env)
+    eval exp, env
     
 class BuiltinFunction
     constructor: (@js_fn) ->
@@ -282,7 +287,7 @@ class BuiltinFunction
         @type = 'lambda' # cheating ..!!
     call: (args_cons, env) ->
         # assume each item in args_cons are already eval'ed
-        @js_fn args_cons
+        @js_fn args_cons, env
     repr: ->
         'builtin-function'
 
@@ -374,4 +379,3 @@ builtins['list'] = new BuiltinFunction( (exp) -> exp )
 builtins['cons'] = new BuiltinFunction( (exp) -> cons(car(exp), car(cdr(exp))) )
 builtins['car'] = new BuiltinFunction ( (exp) -> car car exp ) # exp is a list of one element, we want the car of that element
 builtins['cdr'] = new BuiltinFunction ( (exp) -> cdr car exp ) # exp is a list of one element, we want the cdr of that element
-

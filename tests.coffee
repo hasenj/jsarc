@@ -133,6 +133,11 @@ utest "quote5", "`(a b ,c)", "`(a b 10)"
 utest "quote6", "`(a b ,c ,@d)", "(quasiquote (a b (unquote c) (unquote-splicing d)))"
 utest "quote6", "`(a b ,c ,@d)", "`(a b 10 4 5 3)"
 
+utest "eval0", "(eval 'c)", "c"
+utest "eval1", "(eval 'c)", "10"
+utest "eval2", "(eval '(+ 1 2 3))", "(+ 1 2 3)"
+utest "eval3", "(eval '(+ 1 2 3))", "6"
+
 # -------------------------------------------------------------------
 # ---------   Leave this at the end      ----------------------------
 

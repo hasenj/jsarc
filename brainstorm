@@ -61,3 +61,7 @@ next we have: quoting, local variable creation
 for quoting, we need the reader to transform 'x and '(a b c), etc to (quote x) and (quote (a b c))
 
 for other things like a!b, we read the whole thing as a symbol, but at some point before evaluation, we transorm it to its proper form .. I still don't know how; must look at arc's ssexpand or something like that
+
+-----
+
+perhaps before local variable .. the builtin eval is very important! It would probably allow us to make a REPL and experiment with "macros" in it

@@ -107,6 +107,11 @@ eval_test "(= f (lambda args (+ (car args) (car (cdr args)))))"
 eval_test "(f 3 4)"
 utest "lambda", "(f 3 4)", "7"
 
+eval_test "(quote a)"
+eval_test "(quote (a b c d))"
+
+utest "quote", "(quote (a b c d))", "(list (quote a) (quote b) (quote c) (quote d))"
+
 
 # -------------------------------------------------------------------
 # ---------   Leave this at the end      ----------------------------

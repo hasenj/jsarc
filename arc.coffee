@@ -223,6 +223,11 @@ special_forms['lambda'] = (exp, env) ->
     args_sym_name = (car cdr exp).value
     body = cdr cdr exp # unevaluated ... only evaluates when function is called ..
     new Lambda(env, args_sym_name, body)
+
+special_forms['quote'] = (exp, env) ->
+    # exp is (quote x)
+    # we're quoting the first argument, (car (cdr exp))
+    car cdr exp
     
 class BuiltinFunction
     constructor: (@js_fn) ->

@@ -54,3 +54,6 @@ see http://files.arcfn.com/foundation-doc.html for a list of builtins we need to
 
 of course, we're not cloning everything; no need to rely on dr.raket APIs when we have node/js APIs
 
+----
+
+next we have: quoting, local variable creation

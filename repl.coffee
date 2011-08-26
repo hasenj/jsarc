@@ -3,7 +3,7 @@ env = arc.new_env()
 
 process.stdout.write "type #oops to get unstuck\n\n"
 (prompt = ->
-    process.stdout.write "jsarc>")()
+    process.stdout.write "jsarc> ")()
 
 stdin = process.openStdin()
 stdin.setEncoding('utf8')
@@ -28,6 +28,12 @@ unmatched_braces = (text) ->
 stdin.on 'data', (chunk) ->
     # seems we receive this when user hits enter, 
     # so I'll just assume that to be the case
+    if chunk.match(/#oops\n$/)
+        current_exp = ""
+        console.log "No worries"
+        prompt()
+        return
+
     current_exp += chunk
     if unmatched_braces(current_exp)
         process.stdout.write "...."

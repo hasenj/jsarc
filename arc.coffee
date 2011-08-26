@@ -10,7 +10,7 @@ tok_re =
     'num': /\d+/
     'paren': /[()\[\]{}]/ # special symbols
     'string': /"(([^"])|(\\"))*[^\\]"/ # a bitch to debug (stolen from sibilant)
-    'sym': /(\w|[_+\-*/@=!?<>])+/ # aka identifier
+    'sym': /(\w|[_+\-*/=!?<>:~.!])+/ # aka identifier
     'quoting': /'|`|,@|,/ # reader macros .. 
 
 class Skip
@@ -35,6 +35,7 @@ toktype = (text, type) ->
         return true
     return false
 
+# helper
 readToken = (text, regex, type) ->
     token = matchtok(regex, text)
     if token
@@ -50,6 +51,7 @@ readToken = (text, regex, type) ->
     else
         return null
 
+# helper
 token = (text) ->
     # read a token and return the start of next token
     # returns [t, text] where t is the token and text is the new string
@@ -165,6 +167,8 @@ special_forms = {} # special form processors: a function that processes each for
 # see '=' below
 
 call_function = -> console.log "dummy call handler"
+ssyntax = -> console.log "dummy ss checker"
+ssexpand = -> console.log "dummy ss expander"
 
 eval = (exp, env) ->
     if exp.type == 'sym'
@@ -386,6 +390,39 @@ call_function = (call_object, exp, env) ->
             index -= 1
         car item
 
+to_lisp_list = (list) -> # takes a js list and turns it to a cons list
+    if not list.length
+        nil
+    else
+        cons(list[0], to_lisp_list(list[1...]))
+
+# special syntax
+# e.g. 
+# a:b:~c
+# a.b
+# a!b
+ssyntax = (symbol) -> symbol.value.match(/:|~|\.|!/)
+
+ssexpand = (symbol) ->
+    if symbol.value.match(/:|~/)
+        list = symbol.value.split(':')
+        clog list
+        expand_tilde = (s) ->
+            # s is a plain string
+            if s[0] == '~'
+                x = to_lisp_list([sym('complement'), sym(s[1...])])
+                clog x
+                x
+            else
+                sym(s)
+        list = u.map(list, expand_tilde)
+        clog list
+        list.unshift(sym 'compose')
+        clog list
+        to_lisp_list(list)
+    else
+        symbol
+
 
 # -----------------------
 # add cons, car, cdr to global builtins
@@ -414,3 +451,4 @@ disp = (lisp_object) ->
         lisp_object.value
 
 exports.disp = disp
+

@@ -65,3 +65,17 @@ for other things like a!b, we read the whole thing as a symbol, but at some poin
 -----
 
 perhaps before local variable .. the builtin eval is very important! It would probably allow us to make a REPL and experiment with "macros" in it
+
+----
+
+maybe there's no need to "declare" local variables; if you set a variable that doesn't exist, it will just be local (like coffee script)
+
+what happens (and what should happen) if a variable exists on the outer scope and you use its name? create a local one? just use the outer one?
+
+-------
+
+special syntax, e.g. a!b
+like arc, keep it as one symbol
+
+when eval'ing a symbol with special syntax, it gets expanded and then re-eval'ed
+

@@ -8,10 +8,10 @@ tok_re =
     'ws': /\s+/
     'comment': /;.*/
     'num': /\d+/
-    'paren': /[()\[\]{}\.]/ # special symbols
+    'paren': /[()\[\]{}\.]/ # syntactic symbols
     'string': /"(([^"])|(\\"))*[^\\]"/ # a bitch to debug (stolen from sibilant)
-    'sym': /(\w|[_+\-*/=!?<>:~\.!])+/ # aka identifier
-    'quoting': /'|`|,@|,/ # reader macros .. 
+    'sym': /(\w|[_+\-*\/=!?<>:~\.!])+/ # aka identifier
+    'quoting': /'|`|,@|,/ 
 
 class Skip
     constructor: ->
@@ -96,13 +96,13 @@ quoting_map =
 
 # read a single lisp expression
 read_lisp = (r) ->
+    # r is a reader function
 
     expand_quoting = (quote_char) ->
-        s = new Atom 'sym', quoting_map[quote_char]
+        s = sym quoting_map[quote_char]
         exp = read_lisp(r)
         cons(s, cons(exp, nil))
 
-    # r is a reader function
     read_list = () ->
         item = r()
         if item == '('
@@ -112,7 +112,8 @@ read_lisp = (r) ->
         else if item == '.' # single dot must not be wrapped as a symbol by tokenizer above
             obj = read_lisp(r) # in recursion .. this element will be the cdr of the pair
             # potential problem can arise with things like ( . x) which should be illegal but would pass this parser
-            close = r() # swallow the closing paren
+            close = r() # we need to swallow the closing paren
+            # because we too "end" the recursion, if we don't swallow it, it will end the recursion of the outer list
             obj
         else if item of quoting_map
             cons(expand_quoting(item), read_list())
@@ -150,6 +151,7 @@ class Env
         sym of @syms or (@parent and @parent.has(sym))
     set: (sym, val) ->
         # if symbol defined in a parent scope, set it there, not here
+        # XXX this needs better handling
         if @parent and @parent.has(sym)
             @parent.set(sym, val)
         else
@@ -162,7 +164,7 @@ class Env
         else if @parent
             @parent.get(sym)
         else
-            null # for undefined
+            null # for undefined?
 
 new_env = -> new Env null, builtins
 exports.new_env = new_env
@@ -185,10 +187,10 @@ eval = (exp, env) ->
             env.get(exp.value)
 
     else if exp.type == 'cons' 
-        if car(exp).type == 'sym' and car(exp).value of special_forms
-                special_forms[car(exp).value](exp, env)
+        if exp.car.type == 'sym' and exp.car.value of special_forms
+                special_forms[exp.car.value](exp, env)
         else
-            head = eval(car(exp), env)
+            head = eval(exp.car, env)
             call_function(head, exp, env) # head might be a function, or anything else, (macro, etc), it's all the same from here on as far as we're concerned
 
     else # if exp.type in ['num', 'string']
@@ -199,8 +201,8 @@ exports.eval = eval
 special_forms['='] = (exp, env) ->
     # just assume that car(cons) is the symbol '=', don't even check for it
     # (= place val)
-    place = car cdr exp
-    val = eval(car(cdr(cdr(exp))), env)
+    place = exp.cdr.car
+    val = eval(exp.cdr.cdr.car, env)
     if place.type == 'sym'
         sym_name = place.value
         env.set(sym_name, val)
@@ -223,19 +225,19 @@ special_forms['if'] = (exp, env) ->
     # (if t a ...): a (where t means not nil)
     # (if nil a b): b
     # (if nil a b c ...): (if b c ....)
-    if is_nil cdr(exp) # (if)
+    if is_nil exp.cdr # (if)
         nil
-    else if is_nil (cdr(cdr(exp))) # (if x)
-        car(cdr(exp))
+    else if is_nil exp.cdr.cdr # (if x)
+        exp.cdr.car
     else
-        cond = eval(car(cdr(exp)), env)
+        cond = eval(exp.cdr.car, env)
         if not is_nil(cond) # (if t a ...)
-            car(cdr(cdr(exp))) # third element
+            exp.cdr.cdr.car # third element
         else # false!!
-            if is_nil (cdr(cdr(cdr(cdr(exp))))) # list has 4 elements (a b c d) only
-                car cdr cdr cdr exp # return the forth element
+            if is_nil exp.cdr.cdr.cdr.cdr # list has 4 elements (a b c d) only
+                exp.cdr.cdr.cdr.car # return the forth element
             else # transform (if nil a b c ...) to (if b c ...)
-                if_exp = cons(car(exp), (cdr(cdr(cdr(exp)))))
+                if_exp = cons(exp.car, exp.cdr.cdr.cdr)
                 special_forms['if'](if_exp, env) # recurse with the transformed expression
 
 destructuring_bind = (structure, exp, env) ->
@@ -263,15 +265,15 @@ class Lambda
         # assume each item in args_cons are already eval'ed
         destructuring_bind(@args_structure, args_cons, call_env)
         do_ = (exp_list)=>
-            v = eval(car(exp_list), call_env)
-            if not is_nil(cdr(exp_list))
-                return do_ cdr exp_list
+            v = eval(exp_list.car, call_env)
+            if not is_nil(exp_list.cdr)
+                return do_ exp_list.cdr
             else
                 return v
         do_ @body
 
     repr: ->
-        'lambda(' + @args_structure + '){' + @body.repr() + '}'
+        'lambda' + disp @args_structure + '{' + disp @body + '}'
 
 class Macro
     constructor: (parent_env, arg_st, body) ->
@@ -280,51 +282,47 @@ class Macro
     call: (args_cons, call_env) ->
         # args_cons is not evaled, and @lambda.call won't eval it (assumes already evaled)
         # exp should be the quoted code generated by @lambda
-        clog "args:", disp args_cons
         exp = @lambda.call(args_cons, call_env)
-        clog "mac exp:", disp exp
         eval(exp, call_env)
+
     repr: ->
         'mac:' + @lambda.repr()
 
 special_forms['fn'] = (exp, env) ->
     # (fn args_structure . body)
     # args_structure is a symbol, unevaluated ..
-    args_st = (car cdr exp)
-    body = cdr cdr exp # unevaluated ... only evaluates when function is called ..
+    args_st = exp.cdr.car
+    body = exp.cdr.cdr # unevaluated ... only evaluates when function is called ..
     new Lambda(env, args_st, body)
 
 special_forms['quote'] = (exp, env) ->
     # exp is (quote x)
     # we're quoting the first argument, (car (cdr exp))
-    car cdr exp
+    exp.cdr.car
 
 special_forms['quasiquote'] = (exp, env) ->
     # This one is tough!
     # start by acting like quote
-    exp = car cdr exp
+    exp = exp.cdr.car
     # now traverse this tree to unquote things that need unquoting
     transform = (exp) ->
-        # do things ..
         if exp.type != 'cons'
             return exp
-        if car(exp).type == 'sym'
-            if car(exp).value == 'unquote'
-                return eval(car(cdr(exp)), env)
-        if car(exp).type == 'cons'
-            if car(car(exp)).type == 'sym'
-                if car(car(exp)).value == 'unquote-splicing'
+        if exp.car.type == 'sym'
+            if exp.car.value == 'unquote'
+                return eval(exp.cdr.car, env)
+        if exp.car.type == 'cons'
+            if exp.car.car.type == 'sym'
+                if exp.car.car.value == 'unquote-splicing'
                     # ((unquote-splicing X)) -> X1 X2 X3
                     # car is: (unqote-splicing X)
                     # cdr of that is (X nil)
                     # car of that is X
                     # so, X is car of the cdr of the car of the expression
-                    # TEMP for now, same as unquote
-                    # unquote the cdr and replace the car with it ..
-                    return eval(car(cdr(car(exp))), env)
+                    return eval(exp.car.cdr.car, env)
         # then recurse
-        exp.car = transform (car(exp))
-        exp.cdr = transform (cdr(exp))
+        exp.car = transform exp.car
+        exp.cdr = transform exp.cdr
         return exp
 
     transform(exp)
@@ -367,7 +365,6 @@ parseNumber = (atom) -> parseInt atom.value # placeholder, temporary or not?
                 v1 = parseNumber car args
                 val = fn(val, v1)
                 args = cdr args # pop ..
-            # guess type
             new Atom('num', val.toString())
 
     for op, fn of ops
@@ -403,7 +400,7 @@ parseNumber = (atom) -> parseInt atom.value # placeholder, temporary or not?
 call_function = (call_object, exp, env) ->
     # exp is the whole expression, including the function object at its head
     if not call_object
-        clog "LISP ERROR!", car(exp).value,  "is not a function"
+        clog "LISP ERROR!", exp.car.value,  "is not a function"
     if call_object.type == 'lambda' # if it's a function
         # call it
         # first, eval all remaining things in the expression
@@ -411,8 +408,8 @@ call_function = (call_object, exp, env) ->
             if is_nil exp
                 nil
             else
-                head = eval(car(exp), env)
-                cons(head, do_eval_list(cdr exp))
+                head = eval(exp.car, env)
+                cons(head, do_eval_list(exp.cdr))
 
         # then pass them to the function 
         evaled_list = do_eval_list(cdr exp)
@@ -421,7 +418,7 @@ call_function = (call_object, exp, env) ->
         call_object.call(exp.cdr, env)
 
     else if call_object.type == 'cons' # list, treat as index function, e.g.  (a b) -> a[b]
-        index = eval(car(cdr(exp)), env)
+        index = eval(exp.cdr.car, env)
         index = parseNumber index
         item = call_object
         while index > 0

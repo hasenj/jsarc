@@ -233,15 +233,30 @@ special_forms['if'] = (exp, env) ->
                 if_exp = cons(car(exp), (cdr(cdr(cdr(exp)))))
                 special_forms['if'](if_exp, env) # recurse with the transformed expression
 
+destructuring_bind = (structure, exp, env) ->
+    clog "structure: ", structure
+    if structure.type == 'sym' # recursion's end
+        env.set(structure.value, exp)
+    else if structure.type == 'cons' # now recurse
+        destructuring_bind(structure.car, exp.car, env)
+        if not is_nil structure.cdr # what if exp.cdr is not nil??
+            destructuring_bind(structure.cdr, exp.cdr, env)
+    else # you fail!
+        console.log "Error, expecting symbol, but got", structure.type
+        console.log "###ERROR"
+
+
 # a native datatype
 class Lambda
     # parent_env: scope where the lambda is created
-    constructor: (parent_env, @args_sym_name, @body) ->
+    constructor: (parent_env, @args_structure, @body) ->
         @type = 'lambda'
         @env = parent_env.spawn()
+        clog "constructor: args:", @args_structure
     call: (args_cons, call_env)->
         # assume each item in args_cons are already eval'ed
-        @env.set(@args_sym_name, args_cons)
+        # @env.set(@args_structure, args_cons)
+        destructuring_bind(@args_structure, args_cons, @env)
         do_ = (exp_list)=>
             v = eval(car(exp_list), @env)
             if not is_nil(cdr(exp_list))
@@ -251,13 +266,12 @@ class Lambda
         do_ @body
 
     repr: ->
-        'lambda(' + @args_sym_name + '){' + @body.repr() + '}'
+        'lambda(' + @args_structure + '){' + @body.repr() + '}'
 
-special_forms['lambda'] = (exp, env) ->
-    # (lambda args_var_name exp exp exp ...)
-    # args_var_name is a symbol, unevaluated ..
-    # assert (car cdr exp).type == 'sym' # TODO enable this when you decide how to build error reporting ..
-    args_sym_name = (car cdr exp).value
+special_forms['fn'] = (exp, env) ->
+    # (lambda args_structure exp exp exp ...)
+    # args_structure is a symbol, unevaluated ..
+    args_sym_name = (car cdr exp)
     body = cdr cdr exp # unevaluated ... only evaluates when function is called ..
     new Lambda(env, args_sym_name, body)
 

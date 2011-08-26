@@ -79,3 +79,7 @@ like arc, keep it as one symbol
 
 when eval'ing a symbol with special syntax, it gets expanded and then re-eval'ed
 
+-----------
+
+I think, at this point, only thing remaining in our way before having useful macros is destructuring assignment
+

@@ -319,7 +319,7 @@ special_forms['quasiquote'] = (exp, env) ->
 
 special_forms['eval'] = (exp, env) ->
     # the arguments are unevaled at this point ..
-    exp = eval(car cdr exp, env)
+    exp = eval(exp.cdr.car, env)
     eval exp, env
     
 class BuiltinFunction

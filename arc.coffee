@@ -259,11 +259,13 @@ class Lambda
         @type = 'lambda'
         @env = parent_env.spawn()
     call: (args_cons, call_env)->
+        # whatever this call does to the environment should *not* affect
+        # future calls
+        call_env = u.clone @env
         # assume each item in args_cons are already eval'ed
-        # @env.set(@args_structure, args_cons)
-        destructuring_bind(@args_structure, args_cons, @env)
+        destructuring_bind(@args_structure, args_cons, call_env)
         do_ = (exp_list)=>
-            v = eval(car(exp_list), @env)
+            v = eval(car(exp_list), call_env)
             if not is_nil(cdr(exp_list))
                 return do_ cdr exp_list
             else

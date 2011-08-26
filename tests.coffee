@@ -67,7 +67,7 @@ utest "if6", '(if nil 10 15)', '15'
 utest "if7", '(if nil 10 15 20 30)', '20'
 utest "if8", '(if nil 10 nil 20 30)', '30'
 
-eval_test '(lambda args (+ args))'
+eval_test '(fn args (+ args))'
 
 eval_test "+"
 eval_test "<"
@@ -103,9 +103,9 @@ utest "index1", "((list 4 5 6 7 8 9) 2)", "6"
 utest "setlist", "(= z (list 1 2 3 4))", "(list 1 2 3 4)"
 utest "index2", "(z 1)", "2"
 
-eval_test "(= f (lambda args (+ (car args) (car (cdr args)))))"
+eval_test "(= f (fn args (+ (car args) (car (cdr args)))))"
 eval_test "(f 3 4)"
-utest "lambda", "(f 3 4)", "7"
+utest "fn", "(f 3 4)", "7"
 
 test_read "'(a b ,c)"
 test_read ",c"

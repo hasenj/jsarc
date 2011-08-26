@@ -8,9 +8,9 @@ tok_re =
     'ws': /\s+/
     'comment': /;.*/
     'num': /\d+/
-    'paren': /[()\[\]{}]/ # special symbols
+    'paren': /[()\[\]{}\.]/ # special symbols
     'string': /"(([^"])|(\\"))*[^\\]"/ # a bitch to debug (stolen from sibilant)
-    'sym': /(\w|[_+\-*/=!?<>:~.!])+/ # aka identifier
+    'sym': /(\w|[_+\-*/=!?<>:~\.!])+/ # aka identifier
     'quoting': /'|`|,@|,/ # reader macros .. 
 
 class Skip
@@ -109,6 +109,11 @@ read_lisp = (r) ->
             cons(read_list(), read_list())
         else if item == ')' or item == null
             nil
+        else if item == '.' # single dot must not be wrapped as a symbol by tokenizer above
+            obj = read_lisp(r) # in recursion .. this element will be the cdr of the pair
+            # potential problem can arise with things like ( . x) which should be illegal but would pass this parser
+            close = r() # swallow the closing paren
+            obj
         else if item of quoting_map
             cons(expand_quoting(item), read_list())
         else
@@ -234,8 +239,9 @@ special_forms['if'] = (exp, env) ->
                 special_forms['if'](if_exp, env) # recurse with the transformed expression
 
 destructuring_bind = (structure, exp, env) ->
-    clog "structure: ", structure
+    # clog "structure: ", structure
     if structure.type == 'sym' # recursion's end
+        # clog "exp: ", exp
         env.set(structure.value, exp)
     else if structure.type == 'cons' # now recurse
         destructuring_bind(structure.car, exp.car, env)
@@ -252,12 +258,13 @@ class Lambda
     constructor: (parent_env, @args_structure, @body) ->
         @type = 'lambda'
         @env = parent_env.spawn()
-        clog "constructor: args:", @args_structure
+        # clog "constructor: args:", @args_structure
     call: (args_cons, call_env)->
         # assume each item in args_cons are already eval'ed
         # @env.set(@args_structure, args_cons)
         destructuring_bind(@args_structure, args_cons, @env)
         do_ = (exp_list)=>
+            # clog "exp_list: ", exp_list
             v = eval(car(exp_list), @env)
             if not is_nil(cdr(exp_list))
                 return do_ cdr exp_list
@@ -269,11 +276,13 @@ class Lambda
         'lambda(' + @args_structure + '){' + @body.repr() + '}'
 
 special_forms['fn'] = (exp, env) ->
-    # (lambda args_structure exp exp exp ...)
+    # (fn args_structure . body)
     # args_structure is a symbol, unevaluated ..
-    args_sym_name = (car cdr exp)
+    args_st = (car cdr exp)
     body = cdr cdr exp # unevaluated ... only evaluates when function is called ..
-    new Lambda(env, args_sym_name, body)
+    clog "args is: ", args_st
+    clog "body is: ", body
+    new Lambda(env, args_st, body)
 
 special_forms['quote'] = (exp, env) ->
     # exp is (quote x)

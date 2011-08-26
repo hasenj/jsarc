@@ -35,6 +35,14 @@ stdin.on 'data', (chunk) ->
         return
 
     current_exp += chunk
+
+    if current_exp == "#reload\n"
+        current_exp = ""
+        arc = require "./arc"
+        console.log "not here yet :/"
+        prompt()
+        return
+
     if unmatched_braces(current_exp)
         process.stdout.write "...."
     else
@@ -49,7 +57,7 @@ stdin.on 'data', (chunk) ->
                 console.log "#ERROR"
         catch e
             console.log "eval barfed"
-            console.log e
+            console.log e.stack
         prompt()
 
 stdin.on 'end', ->

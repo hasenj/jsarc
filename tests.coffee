@@ -150,6 +150,12 @@ utest "ss11", "(ssexpand 'a!b)", "'(a (quote b))"
 # ((((((a b) c) (quote d)) (quote f)) t) y)
 utest "ss12", "(ssexpand 'a.b.c!d!f.t.y)", "'((((((a b) c) (quote d)) (quote f)) t) y)"
 
+eval_test "(= a (list 9 8 7 6 5))"
+eval_test "(= b 2)"
+utest "ss20", "a.b", "(a b)"
+utest "ss21", "a.b", "7"
+
+
 # -------------------------------------------------------------------
 # ---------   Leave this at the end      ----------------------------
 

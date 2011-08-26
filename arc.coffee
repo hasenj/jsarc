@@ -172,7 +172,10 @@ ssexpand = -> console.log "dummy ss expander"
 
 eval = (exp, env) ->
     if exp.type == 'sym'
-       env.get(exp.value)
+        if ssyntax(exp) # special syntax, expand then eval the expansion
+            eval ssexpand(exp), env
+        else # regular symbol
+            env.get(exp.value)
 
     else if exp.type == 'cons' 
         if car(exp).type == 'sym' and car(exp).value of special_forms

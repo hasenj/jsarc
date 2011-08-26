@@ -239,9 +239,7 @@ special_forms['if'] = (exp, env) ->
                 special_forms['if'](if_exp, env) # recurse with the transformed expression
 
 destructuring_bind = (structure, exp, env) ->
-    # clog "structure: ", structure
     if structure.type == 'sym' # recursion's end
-        # clog "exp: ", exp
         env.set(structure.value, exp)
     else if structure.type == 'cons' # now recurse
         destructuring_bind(structure.car, exp.car, env)
@@ -258,13 +256,11 @@ class Lambda
     constructor: (parent_env, @args_structure, @body) ->
         @type = 'lambda'
         @env = parent_env.spawn()
-        # clog "constructor: args:", @args_structure
     call: (args_cons, call_env)->
         # assume each item in args_cons are already eval'ed
         # @env.set(@args_structure, args_cons)
         destructuring_bind(@args_structure, args_cons, @env)
         do_ = (exp_list)=>
-            # clog "exp_list: ", exp_list
             v = eval(car(exp_list), @env)
             if not is_nil(cdr(exp_list))
                 return do_ cdr exp_list
@@ -280,8 +276,6 @@ special_forms['fn'] = (exp, env) ->
     # args_structure is a symbol, unevaluated ..
     args_st = (car cdr exp)
     body = cdr cdr exp # unevaluated ... only evaluates when function is called ..
-    clog "args is: ", args_st
-    clog "body is: ", body
     new Lambda(env, args_st, body)
 
 special_forms['quote'] = (exp, env) ->

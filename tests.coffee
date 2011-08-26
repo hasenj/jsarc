@@ -158,6 +158,10 @@ utest "ss21", "a.b", "7"
 utest "fn0", "((fn (a b) (+ b 4)) 5 6)", "10"
 utest "fn1", "((fn (a b . c) c) 5 6 1 2 3 4)", "(list 1 2 3 4)"
 
+eval_test "(= a (fn (a b) (+ a b)))"
+utest "scope0", "(a 3 4)", "7"
+utest "scope1", "(a 3 4)", "7" # test that setting 'a' inside the function doesn't disturb the global 'a'
+
 
 # -------------------------------------------------------------------
 # ---------   Leave this at the end      ----------------------------

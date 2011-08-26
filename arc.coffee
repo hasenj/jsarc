@@ -154,6 +154,8 @@ class Env
             @parent.set(sym, val)
         else
             @syms[sym] = val
+    set_local: (sym, val) ->
+        @syms[sym] = val
     get: (sym) ->
         if sym of @syms
             @syms[sym]
@@ -240,7 +242,7 @@ special_forms['if'] = (exp, env) ->
 
 destructuring_bind = (structure, exp, env) ->
     if structure.type == 'sym' # recursion's end
-        env.set(structure.value, exp)
+        env.set_local(structure.value, exp)
     else if structure.type == 'cons' # now recurse
         destructuring_bind(structure.car, exp.car, env)
         if not is_nil structure.cdr # what if exp.cdr is not nil??

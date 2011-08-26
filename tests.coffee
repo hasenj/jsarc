@@ -162,6 +162,10 @@ eval_test "(= a (fn (a b) (+ a b)))"
 utest "scope0", "(a 3 4)", "7"
 utest "scope1", "(a 3 4)", "7" # test that setting 'a' inside the function doesn't disturb the global 'a'
 
+eval_test "(mac def (name args . body) `(= ,name (fn ,args ,@body)))"
+eval_test "(def avg (x y) (/ (+ x y) 2))"
+utest "macdef", "(avg 20 10)", "15"
+
 
 # -------------------------------------------------------------------
 # ---------   Leave this at the end      ----------------------------

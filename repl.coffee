@@ -40,12 +40,16 @@ stdin.on 'data', (chunk) ->
     else
         exp = current_exp
         current_exp = "" # not sure if this trick is needed ..
-        val = arc.eval(arc.read(exp), env)
-        # process.stdout.write val
-        if val
-            console.log arc.disp val
-        else
-            console.log "#ERROR"
+        try
+            val = arc.eval(arc.read(exp), env)
+            # process.stdout.write val
+            if val
+                console.log arc.disp val
+            else
+                console.log "#ERROR"
+        catch e
+            console.log "eval barfed"
+            console.log e
         prompt()
 
 stdin.on 'end', ->

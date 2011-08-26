@@ -194,8 +194,8 @@ special_forms['='] = (exp, env) ->
     place = car cdr exp
     val = eval(car(cdr(cdr(exp))), env)
     if place.type == 'sym'
-        sym = place.value
-        env.set(sym, val)
+        sym_name = place.value
+        env.set(sym_name, val)
     else 
         place = eval(place, env)
         # delete all keys from place and replace them the keys from val
@@ -390,6 +390,9 @@ call_function = (call_object, exp, env) ->
             index -= 1
         car item
 
+to_arc_bool = (bool) ->
+    if bool then t else nil
+
 to_lisp_list = (list) -> # takes a js list and turns it to a cons list
     if not list.length
         nil
@@ -406,20 +409,27 @@ ssyntax = (symbol) -> symbol.value.match(/:|~|\.|!/)
 ssexpand = (symbol) ->
     if symbol.value.match(/:|~/)
         list = symbol.value.split(':')
-        clog list
         expand_tilde = (s) ->
             # s is a plain string
             if s[0] == '~'
-                x = to_lisp_list([sym('complement'), sym(s[1...])])
-                clog x
-                x
+                to_lisp_list [sym('complement'), sym(s[1...])]
             else
                 sym(s)
         list = u.map(list, expand_tilde)
-        clog list
         list.unshift(sym 'compose')
-        clog list
         to_lisp_list(list)
+    else if symbol.value.match(/\.|!/)
+        list = symbol.value.replace(/!/g, ".'").split('.')
+        symify = (s)->
+            if s[0] == '\''
+                to_lisp_list [sym('quote'), sym(s[1...])]
+            else
+                sym(s)
+        list = u.map(list, symify)
+        expanded = list.shift()
+        while list.length != 0
+            expanded = to_lisp_list [expanded, list.shift()]
+        expanded
     else
         symbol
 
@@ -430,6 +440,9 @@ builtins['list'] = new BuiltinFunction( (exp) -> exp )
 builtins['cons'] = new BuiltinFunction( (exp) -> cons(car(exp), car(cdr(exp))) )
 builtins['car'] = new BuiltinFunction ( (exp) -> car car exp ) # exp is a list of one element, we want the car of that element
 builtins['cdr'] = new BuiltinFunction ( (exp) -> cdr car exp ) # exp is a list of one element, we want the cdr of that element
+
+builtins['ssyntax'] = new BuiltinFunction( (exp) -> to_arc_bool(ssyntax exp.car) )
+builtins['ssexpand'] = new BuiltinFunction( (exp) -> ssexpand exp.car )
 
 
 # ---------------------------------- display -------------------
@@ -447,6 +460,8 @@ disp = (lisp_object) ->
         # display list .. 
         # HACK for now
         '(' + disp_list_inner(lisp_object) + ')'
+    else if lisp_object.type == 'lambda'
+        '<lambda>'
     else 
         lisp_object.value
 

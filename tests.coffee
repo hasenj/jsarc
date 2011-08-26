@@ -138,6 +138,18 @@ utest "eval1", "(eval 'c)", "10"
 utest "eval2", "(eval '(+ 1 2 3))", "(+ 1 2 3)"
 utest "eval3", "(eval '(+ 1 2 3))", "6"
 
+
+utest "ss0", "(ssexpand 'a:b)", "'(compose a b)"
+utest "ss1", "(ssexpand 'a:~b)", "'(compose a (complement b))"
+utest "ss2", "(ssexpand 'a:~b:c)", "'(compose a (complement b) c)"
+
+utest "ss10", "(ssexpand 'a.b)", "'(a b)"
+utest "ss11", "(ssexpand 'a!b)", "'(a (quote b))"
+# I ran this in arc, and got:
+# arc> (ssexpand 'a.b.c!d!f.t.y)
+# ((((((a b) c) (quote d)) (quote f)) t) y)
+utest "ss12", "(ssexpand 'a.b.c!d!f.t.y)", "'((((((a b) c) (quote d)) (quote f)) t) y)"
+
 # -------------------------------------------------------------------
 # ---------   Leave this at the end      ----------------------------
 

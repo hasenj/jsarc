@@ -43,5 +43,5 @@ stdin.on 'data', (chunk) ->
         prompt()
 
 stdin.on 'end', ->
-    process.stdout.write('end')
+    console.log "\nend of input\n"
 

@@ -182,14 +182,25 @@ eval = (exp, env) ->
 
 exports.eval = eval
 
-special_forms['='] = (cons, env) ->
+special_forms['='] = (exp, env) ->
     # just assume that car(cons) is the symbol '=', don't even check for it
     # assume (= sym val) for now
     # later should extended so that it handles places, not just symbols, 
     # e.g. (= place val)
-    sym = car(cdr(cons)).value
-    val = eval(car(cdr(cdr(cons))), env)
-    env.set(sym, val)
+    place = car cdr exp
+    val = eval(car(cdr(cdr(exp))), env)
+    if place.type == 'sym'
+        sym = place.value
+        env.set(sym, val)
+    else 
+        place = eval(place, env)
+        # delete all keys from place and replace them the keys from val
+        # XXX this might be the wrong way to do it because it creates a copy (should it just refer to it??)
+        # needs testing
+        for k in u.keys(place)
+            delete place[k]
+        for k in u.keys(val)
+            place[k] = val[k]
     return val
 
 is_nil = (val) -> val.type == 'sym' and val.value == 'nil'

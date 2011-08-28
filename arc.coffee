@@ -4,6 +4,11 @@ u = require "underscore"
 
 clog = console.log
 
+err = (msg...) ->
+    # the ... is so we can call it like console.log
+    throw new Error(msg.join ' ')
+
+
 tok_re = 
     'ws': /\s+/
     'comment': /;.*/
@@ -248,8 +253,7 @@ destructuring_bind = (structure, exp, env) ->
         if not is_nil structure.cdr # what if exp.cdr is not nil??
             destructuring_bind(structure.cdr, exp.cdr, env)
     else # you fail!
-        console.log "Error, expecting symbol, but got", structure.type
-        console.log "###ERROR"
+        err "Expecting symbol, but got", structure.repr()
 
 
 # a native datatype
@@ -400,7 +404,7 @@ parseNumber = (atom) -> parseInt atom.value # placeholder, temporary or not?
 call_function = (call_object, exp, env) ->
     # exp is the whole expression, including the function object at its head
     if not call_object
-        clog "LISP ERROR!", exp.car.value,  "is not a function"
+        err "LISP ERROR!", exp.car.value,  "is not a function"
     if call_object.type == 'lambda' # if it's a function
         # call it
         # first, eval all remaining things in the expression
@@ -414,7 +418,7 @@ call_function = (call_object, exp, env) ->
         # then pass them to the function 
         evaled_list = do_eval_list(cdr exp)
         call_object.call(evaled_list)
-    else if call_object.type == 'mac' # macros! yay
+    else if call_object.type == 'mac' 
         call_object.call(exp.cdr, env)
 
     else if call_object.type == 'cons' # list, treat as index function, e.g.  (a b) -> a[b]

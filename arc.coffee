@@ -155,12 +155,19 @@ class Env
     has: (sym) ->
         sym of @syms or (@parent and @parent.has(sym))
     set: (sym, val) ->
-        # if symbol defined in a parent scope, set it there, not here
-        # XXX this needs better handling
-        if @parent and @parent.has(sym)
-            @parent.set(sym, val)
+        # XXX this needs a better thought out way to handle it
+        if sym in @syms
+            @set_local(sym, val)
         else
-            @syms[sym] = val
+            # if some is not bound in this scope, check parent scopes first
+            # if symbol defined in a parent scope, set it there, not here
+            if @parent and @parent.has(sym)
+                @parent.set(sym, val)
+            # sym not bound her nor in any parent env, 
+            # so just set it here
+            # this is different from how arc handles it
+            else
+                @set_local(sym, val)
     set_local: (sym, val) ->
         @syms[sym] = val
     get: (sym) ->

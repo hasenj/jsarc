@@ -188,6 +188,16 @@ utest "var4", "a", "10"
 utest "var5", "b", "20"
 
 
+# closures
+ueval "(= n 0)"
+ueval "(= acc (fn (n) (fn (i) (= n (+ n i)))))"
+ueval "(= g (acc 4)"
+utest "closure0", "(g 1)", "5"
+utest "closure1", "(g 1)", "6"
+utest "closure2", "(g 1)", "7"
+utest "closure2", "(g 3)", "10"
+
+
 # -------------------------------------------------------------------
 # ---------   Leave this at the end      ----------------------------
 

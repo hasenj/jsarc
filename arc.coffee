@@ -160,7 +160,7 @@ class Env
         sym of @syms or (@parent and @parent.has(sym))
     set: (sym, val) ->
         # XXX this needs a better thought out way to handle it
-        if @has(sym)
+        if @has_local(sym)
             @set_local(sym, val)
         else
             # if sym is not bound in this scope, look for it in parent scope
@@ -170,6 +170,8 @@ class Env
                 @set_local(sym, val)
     set_local: (sym, val) ->
         @syms[sym] = val
+    has_local: (sym) ->
+        sym of @syms
     get: (sym) ->
         if sym of @syms
             @syms[sym]

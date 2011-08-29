@@ -1,3 +1,9 @@
+NOTE: this is a place for brain dumps. I never update it or clean it up. I keep appending brain dumps to the bottom. 
+
+The ideas here do not necessarily represent how things are actually implemented.
+
+---------------
+
 Start small -- implement the smallest subset of lisp/arc one can get away with
 
 datatypes: symbols, strings, numbers, functions

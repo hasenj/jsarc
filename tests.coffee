@@ -59,10 +59,11 @@ utest = (name, text1, text2, equal=true) ->
         test_fails.push(name)
 
 
-ueval "(= a 5)"
-ueval "(= b 10)"
-ueval "(= c 15)"
-ueval "(= d 25)"
+ueval "(= a 5 b 10 c 15 d 20)"
+utest "=0", "a", "5"
+utest "=1", "b", "10"
+utest "=2", "c", "15"
+utest "=3", "d", "20"
 utest "if1", '(if)', 'nil'
 utest "if2", '(if a)', 'a'
 utest "if3", '(if a b)', 'b'
@@ -72,6 +73,11 @@ utest "if6", '(if nil a b)', 'a', false
 utest "if6", '(if nil a b)', 'b'
 utest "if7", '(if nil a b c d)', 'c'
 utest "if8", '(if nil a nil b c)', 'c'
+
+utest "=4", "(= a 1)", "1"
+utest "=5", "(= a 1 b 2)", "2"
+utest "=6", "(= a 1 b)", "nil"
+utest "=7", "b", "nil"
 
 ueval '(fn args (+ args))'
 
@@ -176,6 +182,10 @@ ueval "(def local_test (k) (+ k (if (> k 6) a (var a 20))))" # if param given <=
 utest "var0", "(local_test 8)", "18"
 utest "var1", "(local_test 2)", "22"
 utest "var2", "a", "10"
+
+utest "var3", "(var a 10 b 20 c)", "nil"
+utest "var4", "a", "10"
+utest "var5", "b", "20"
 
 
 # -------------------------------------------------------------------

@@ -210,26 +210,38 @@ eval = (exp, env) ->
 
 exports.eval = eval
 
+is_nil = (val) -> val.type == 'sym' and val.value == 'nil'
+js_bool = (val) -> not is_nil val
+
 special_forms['='] = (exp, env) ->
     # just assume that car(cons) is the symbol '=', don't even check for it
-    # (= place val)
-    place = exp.cdr.car
-    val = eval(exp.cdr.cdr.car, env)
-    if place.type == 'sym'
-        sym_name = place.value
-        env.set(sym_name, val)
-    else 
-        place = eval(place, env)
-        # delete all keys from place and replace them the keys from val
-        # XXX this might be the wrong way to do it because it creates a copy (should it just refer to it??)
-        # needs testing
-        for k in u.keys(place)
-            delete place[k]
-        for k in u.keys(val)
-            place[k] = val[k]
-    return val
-
-is_nil = (val) -> val.type == 'sym' and val.value == 'nil'
+    # (= place val ...)
+    assign = (exp) ->
+        # exp is now (place val ...) or (place)
+        place = exp.car
+        if not is_nil exp.cdr
+            val = eval(exp.cdr.car, env)
+        else
+            val = nil
+        if place.type == 'sym'
+            sym_name = place.value
+            env.set(sym_name, val)
+        else 
+            place = eval(place, env)
+            # delete all keys from place and replace them the keys from val
+            # XXX this might be the wrong way to do it because it creates a copy (should it just refer to it??)
+            # needs testing
+            for k in u.keys(place)
+                delete place[k]
+            for k in u.keys(val)
+                place[k] = val[k]
+        # shift (a b c d) to (c d)
+        # unless it's (a) then just change it to nil
+        if exp.cdr.cdr? and not is_nil exp.cdr.cdr
+            assign exp.cdr.cdr
+        else
+            val
+    assign(exp.cdr)
 
 special_forms['if'] = (exp, env) ->
     # (if) : nil
@@ -344,10 +356,19 @@ special_forms['var'] = (exp, env) ->
     # not in arc:
     # (var sym val)
     # binds sym to val locally and returns val
-    sym = exp.cdr.car.value
-    val = eval(exp.cdr.cdr.car, env)
-    env.set_local(sym, val)
-    val
+    bind = (exp) ->
+        # exp is (a b ..) or (a)
+        sym = exp.car.value
+        if js_bool exp.cdr
+            val = eval(exp.cdr.car, env)
+        else
+            val = nil
+        env.set_local(sym, val)
+        if exp.cdr.cdr? and not is_nil exp.cdr.cdr
+            bind exp.cdr.cdr
+        else
+            val
+    bind exp.cdr
     
     
 class BuiltinFunction

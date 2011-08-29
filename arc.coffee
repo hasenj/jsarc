@@ -179,6 +179,9 @@ class Env
             @parent.get(sym)
         else
             err 'symbol', sym, 'is not bound.'
+    disp: ->
+        ("(#{a}: #{disp b})" for a, b of @syms).join('') + (if @parent then (" # " + @parent.disp()) else "")
+        
 
 new_env = -> new Env null, builtins
 exports.new_env = new_env
@@ -555,8 +558,12 @@ disp = (lisp_object) ->
         '<lambda>'
     else if lisp_object.type == 'mac'
         '<macro>'
-    else 
+    else if lisp_object.disp?
+        lisp_object.disp()
+    else if lisp_object.value?
         lisp_object.value
+    else
+        "<?!>"
 
 exports.disp = disp
 

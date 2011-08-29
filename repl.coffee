@@ -51,13 +51,13 @@ stdin.on 'data', (chunk) ->
         try
             val = arc.eval(arc.read(exp), env)
             # process.stdout.write val
-            if val
-                console.log arc.disp val
-            else
-                console.log "#ERROR"
+            console.log arc.disp val
         catch e
-            console.log "eval barfed"
-            console.log e.stack
+            if e.constructor.name == 'LispError'
+                console.log e.msg...
+            else
+                console.log "eval barfed"
+                console.log e.stack
         prompt()
 
 stdin.on 'end', ->

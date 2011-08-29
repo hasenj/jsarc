@@ -4,9 +4,13 @@ u = require "underscore"
 
 clog = console.log
 
+class LispError 
+    constructor:(@msg...) ->
+        
+
 err = (msg...) ->
     # the ... is so we can call it like console.log
-    throw new Error(msg.join ' ')
+    throw new LispError(msg.join ' ')
 
 
 tok_re = 
@@ -176,7 +180,7 @@ class Env
         else if @parent
             @parent.get(sym)
         else
-            null # for undefined?
+            err 'symbol', sym, 'is not bound.'
 
 new_env = -> new Env null, builtins
 exports.new_env = new_env
@@ -411,7 +415,7 @@ parseNumber = (atom) -> parseInt atom.value # placeholder, temporary or not?
 call_function = (call_object, exp, env) ->
     # exp is the whole expression, including the function object at its head
     if not call_object
-        err "LISP ERROR!", exp.car.value,  "is not a function"
+        err exp.car.value,  "is not a function"
     if call_object.type == 'lambda' # if it's a function
         # call it
         # first, eval all remaining things in the expression
@@ -436,6 +440,8 @@ call_function = (call_object, exp, env) ->
             item = cdr item
             index -= 1
         car item
+    else
+        err (disp call_object), "can't be used as a function"
 
 to_arc_bool = (bool) ->
     if bool then t else nil

@@ -160,17 +160,13 @@ class Env
         sym of @syms or (@parent and @parent.has(sym))
     set: (sym, val) ->
         # XXX this needs a better thought out way to handle it
-        if sym in @syms
+        if @has(sym)
             @set_local(sym, val)
         else
-            # if some is not bound in this scope, check parent scopes first
-            # if symbol defined in a parent scope, set it there, not here
-            if @parent and @parent.has(sym)
+            # if sym is not bound in this scope, look for it in parent scope
+            if @parent 
                 @parent.set(sym, val)
-            # sym not bound her nor in any parent env, 
-            # so just set it here
-            # this is different from how arc handles it
-            else
+            else # no more outer scopes; this is the global scope; set it here
                 @set_local(sym, val)
     set_local: (sym, val) ->
         @syms[sym] = val

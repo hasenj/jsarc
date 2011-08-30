@@ -112,11 +112,20 @@ read_lisp = (r) ->
         exp = read_lisp(r)
         cons(s, cons(exp, nil))
 
+    make_anon_fn = (exp) ->
+        # turn exp into the body of an anon function
+        # do it like arc:
+        # [x] -> (make-br-fn (x))
+        m = sym 'make-br-fn'
+        to_lisp_list [m, exp]
+
     read_list = () ->
         item = r()
         if item == '('
             cons(read_list(), read_list())
-        else if item == ')' or item == null
+        else if item == '['
+            cons(make_anon_fn(read_list()), read_list())
+        else if item == ')' or item == ']' or item == null # why do we check for null?
             nil
         else if item == '.' # single dot must not be wrapped as a symbol by tokenizer above
             obj = read_lisp(r) # in recursion .. this element will be the cdr of the pair
@@ -132,6 +141,8 @@ read_lisp = (r) ->
     item = r()
     if item == '('
         read_list()
+    else if item == '['
+        make_anon_fn(read_list())
     else if item of quoting_map
         expand_quoting(item)
     else
@@ -363,12 +374,12 @@ special_forms['var'] = (exp, env) ->
     # binds sym to val locally and returns val
     bind = (exp) ->
         # exp is (a b ..) or (a)
-        sym = exp.car.value
+        ident = exp.car.value
         if js_bool exp.cdr
             val = eval(exp.cdr.car, env)
         else
             val = nil
-        env.set_local(sym, val)
+        env.set_local(ident, val)
         if exp.cdr.cdr? and not is_nil exp.cdr.cdr
             bind exp.cdr.cdr
         else
@@ -563,7 +574,7 @@ disp = (lisp_object) ->
     else if lisp_object.value?
         lisp_object.value
     else
-        "<?!>"
+        "<??!#{lisp_object}!!?>"
 
 exports.disp = disp
 

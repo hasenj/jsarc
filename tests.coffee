@@ -190,12 +190,24 @@ utest "var5", "b", "20"
 
 # closures
 ueval "(= n 0)"
-ueval "(= acc (fn (n) (fn (i) (= n (+ n i)))))"
+ueval "(def acc (n) (fn (i) (= n (+ n i)))))"
 ueval "(= g (acc 4)"
-utest "closure0", "(g 1)", "5"
-utest "closure1", "(g 1)", "6"
-utest "closure2", "(g 1)", "7"
-utest "closure2", "(g 3)", "10"
+utest "cl0", "(g 1)", "5"
+utest "cl1", "(g 1)", "6"
+utest "cl2", "(g 1)", "7"
+utest "cl3", "(g 3)", "10"
+utest "cl4", "n", "0" # global n should not be affected
+
+# anon function bracket syntax
+utest "bk0", "'[x]", "'(make-br-fn (x))"
+ueval "(mac make-br-fn (body) `(fn (_) ,body))"
+
+ueval "'(def foo (n) [= n (+ n _)])" 
+ueval "(def foo (n) [= n (+ n _)])" 
+ueval "(= h (foo 2))"
+utest "cl5", "(h 1)", "3"
+utest "cl6", "(h 1)", "4"
+utest "cl7", "(h 2)", "6"
 
 
 # -------------------------------------------------------------------
